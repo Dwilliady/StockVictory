@@ -1,56 +1,94 @@
-document.addEventListener("DOMContentLoaded", function () {
+async function login() {
 
-    const loginForm = document.getElementById("loginForm");
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
 
-    if (!loginForm) return;
+    if (!username || !password) {
+        alert("Username dan password wajib diisi.");
+        return;
+    }
 
-    loginForm.addEventListener("submit", function (e) {
+    // Mapping username → email Supabase Auth
+    const emailMap = {
+        admin: "admin.victory@gmail.com",
+        kasir: "kasir.victory@gmail.com"
+    };
 
-        e.preventDefault();
+    const email = emailMap[username];
 
-        const username =
-            document.getElementById("username").value.trim();
+    if (!email) {
+        alert("Username tidak ditemukan.");
+        return;
+    }
 
-        const password =
-            document.getElementById("password").value;
+    // Login ke Supabase Auth
+    const { data, error } =
+        await supabaseClient.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
 
-        let role = null;
+    if (error) {
+        console.error("Login error:", error);
+        alert("Login gagal: " + error.message);
+        return;
+    }
 
-        if (
-            username === "admin" &&
-            password === "admin123"
-        ) {
+    // Ambil profile berdasarkan Auth User ID
+    const { data: profile, error: profileError } =
+        await supabaseClient
+            .from("profiles")
+            .select(`
+                id,
+                username,
+                full_name,
+                role,
+                is_active
+            `)
+            .eq("id", data.user.id)
+            .single();
 
-            role = "admin";
+    if (profileError) {
+        console.error("Profile error:", profileError);
 
-        } else if (
-            username === "kasir" &&
-            password === "kasir123"
-        ) {
+        await supabaseClient.auth.signOut();
 
-            role = "kasir";
+        alert("Profile user tidak ditemukan.");
+        return;
+    }
 
-        }
+    // Pastikan user aktif
+    if (!profile.is_active) {
 
-        if (!role) {
+        await supabaseClient.auth.signOut();
 
-            document
-                .getElementById("loginError")
-                .classList.remove("d-none");
+        alert("User tidak aktif.");
+        return;
+    }
 
-            return;
-        }
+    // Simpan informasi untuk kebutuhan tampilan UI
+    sessionStorage.setItem(
+        "inventory_user",
+        JSON.stringify(profile)
+    );
 
-        sessionStorage.setItem(
-            "inventory_user",
-            JSON.stringify({
-                username: username,
-                role: role
-            })
-        );
+    console.log("Login berhasil:", profile);
 
-        window.location.href = "app.html";
+    // Masuk aplikasi
+    window.location.href = "app.html";
+}
 
-    });
+async function logout() {
 
-});
+    const { error } = await supabaseClient.auth.signOut();
+
+    if (error) {
+        console.error("Logout error:", error);
+        alert("Gagal logout.");
+        return;
+    }
+
+    sessionStorage.removeItem("user");
+
+    window.location.href = "index.html";
+}

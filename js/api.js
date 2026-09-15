@@ -1,35 +1,10 @@
-const API = {
+const SUPABASE_URL = "https://tnywarkzzfzilveaubiq.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_YSsiFElk3nZXhIQF3mlclQ_7BuW2usz";
 
-    baseUrl: "",
-
-
-    async get(action, params = {}) {
-
-        console.log(
-            "API GET",
-            action,
-            params
-        );
-
-        // Nanti:
-        // const response = await fetch(...)
-
-        return null;
-    },
+const supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+);
 
 
-    async post(action, data = {}) {
-
-        console.log(
-            "API POST",
-            action,
-            data
-        );
-
-        // Nanti:
-        // const response = await fetch(...)
-
-        return null;
-    }
-
-};
+console.log("Supabase client:", supabaseClient);

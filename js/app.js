@@ -13,7 +13,6 @@ const permissions = {
     ],
 
     kasir: [
-        "dashboard",
         "inventory",
         "sales"
     ]
@@ -101,23 +100,89 @@ let currentPage = "dashboard";
 
 document.addEventListener(
     "DOMContentLoaded",
-    function () {
+    async function () {
 
-        const user =
-            JSON.parse(
-                sessionStorage.getItem(
-                    "inventory_user"
-                )
-            );
+        // =========================================
+        // CEK SESSION SUPABASE
+        // =========================================
 
-        if (!user) {
+        const {
+            data: { session },
+            error
+        } = await supabaseClient.auth.getSession();
 
-            window.location.href =
-                "index.html";
+        if (error || !session) {
+
+            window.location.href = "index.html";
 
             return;
         }
 
+
+        // =========================================
+        // AMBIL PROFILE USER
+        // =========================================
+
+        const {
+            data: user,
+            error: profileError
+        } = await supabaseClient
+            .from("profiles")
+            .select(`
+                id,
+                username,
+                full_name,
+                role,
+                is_active
+            `)
+            .eq("id", session.user.id)
+            .single();
+
+
+        if (profileError || !user) {
+
+            console.error(
+                "Profile error:",
+                profileError
+            );
+
+            await supabaseClient.auth.signOut();
+
+            window.location.href = "index.html";
+
+            return;
+        }
+
+
+        // =========================================
+        // CEK USER AKTIF
+        // =========================================
+
+        if (!user.is_active) {
+
+            await supabaseClient.auth.signOut();
+
+            alert("User tidak aktif.");
+
+            window.location.href = "index.html";
+
+            return;
+        }
+
+
+        // =========================================
+        // SIMPAN PROFILE UNTUK UI
+        // =========================================
+
+        sessionStorage.setItem(
+            "inventory_user",
+            JSON.stringify(user)
+        );
+
+
+        // =========================================
+        // TAMPILKAN USERNAME
+        // =========================================
 
         document.getElementById(
             "currentUsername"
@@ -125,14 +190,26 @@ document.addEventListener(
             user.username;
 
 
+        // =========================================
+        // TAMPILKAN ROLE
+        // =========================================
+
         document.getElementById(
             "currentRole"
         ).textContent =
             user.role.toUpperCase();
 
 
+        // =========================================
+        // BUILD SIDEBAR
+        // =========================================
+
         buildSidebar(user.role);
 
+
+        // =========================================
+        // LOGOUT
+        // =========================================
 
         document.getElementById(
             "logoutButton"
@@ -141,6 +218,10 @@ document.addEventListener(
             logout
         );
 
+
+        // =========================================
+        // SIDEBAR MOBILE
+        // =========================================
 
         document.getElementById(
             "sidebarToggle"
@@ -156,83 +237,91 @@ document.addEventListener(
         );
 
 
+        // =========================================
+        // LOAD DEFAULT PAGE
+        // =========================================
+
         loadPage("dashboard");
 
     }
 );
 
+console.log("PROFILE USER:", user);
+console.log("ROLE:", user.role);
+console.log("ROLE TYPE:", typeof user.role);
+console.log("ALLOWED PAGES:", permissions[user.role]);
 
 function buildSidebar(role) {
 
     const container =
-        document.getElementById(
-            "sidebarMenu"
-        );
+        document.getElementById("sidebarMenu");
+
+    if (!container) {
+        console.error("sidebarMenu tidak ditemukan.");
+        return;
+    }
 
     container.innerHTML = "";
 
+    // Pastikan role selalu lowercase
+    role = String(role || "").trim().toLowerCase();
+
+    console.log("Building sidebar for role:", role);
 
     const allowedPages =
         permissions[role] || [];
 
+    console.log("Allowed pages:", allowedPages);
 
-    menuConfig.forEach(
-        function (menu) {
+    menuConfig.forEach(function (menu) {
 
-            if (menu.section) {
+        // Section
+        if (menu.section) {
 
-                const section =
-                    document.createElement("div");
+            // Jangan tampilkan section kalau tidak ada
+            // menu yang boleh ditampilkan di bawahnya.
+            const section =
+                document.createElement("div");
 
-                section.className =
-                    "sidebar-section";
+            section.className =
+                "sidebar-section";
 
-                section.textContent =
-                    menu.section;
+            section.textContent =
+                menu.section;
 
-                container.appendChild(section);
+            container.appendChild(section);
 
-                return;
-            }
-
-
-            if (
-                !allowedPages.includes(menu.id)
-            ) {
-                return;
-            }
-
-
-            const link =
-                document.createElement("a");
-
-            link.className =
-                "sidebar-link";
-
-            link.dataset.page =
-                menu.id;
-
-
-            link.innerHTML = `
-                <i class="bi ${menu.icon}"></i>
-                <span>${menu.title}</span>
-            `;
-
-
-            link.addEventListener(
-                "click",
-                function () {
-
-                    loadPage(menu.id);
-
-                }
-            );
-
-
-            container.appendChild(link);
-
+            return;
         }
-    );
+
+        // Cek permission
+        if (!allowedPages.includes(menu.id)) {
+            return;
+        }
+
+        const link =
+            document.createElement("a");
+
+        link.href = "#";
+        link.className = "sidebar-link";
+        link.dataset.page = menu.id;
+
+        link.innerHTML = `
+            <i class="bi ${menu.icon}"></i>
+            <span>${menu.title}</span>
+        `;
+
+        link.addEventListener("click", function (e) {
+
+            e.preventDefault();
+
+            loadPage(menu.id);
+
+        });
+
+        container.appendChild(link);
+
+    });
 
 }
 
@@ -380,14 +469,16 @@ function initializePage(page) {
 
 }
 
+async function checkAuth() {
+    const {
+        data: { session },
+        error
+    } = await supabaseClient.auth.getSession();
 
-function logout() {
+    if (error || !session) {
+        window.location.href = "index.html";
+        return null;
+    }
 
-    sessionStorage.removeItem(
-        "inventory_user"
-    );
-
-    window.location.href =
-        "index.html";
-
+    return session;
 }
