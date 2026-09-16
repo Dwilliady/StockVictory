@@ -58,8 +58,11 @@ body {
 }
 
 .company-logo2 {
+    display: block;
+    width: 100%;
     max-width: 400px;
+    height: auto;
     max-height: 120px;
     object-fit: contain;
-    display: block;
+    margin: 0 auto;
 }
