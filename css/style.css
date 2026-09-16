@@ -175,6 +175,19 @@ body {
     }
 }
 
+@media (max-width: 991.98px) {
+
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+    }
+
+    .sidebar.show {
+        transform: translateX(0);
+    }
+
+}
+
 .inventory-item-icon {
     width: 42px;
     height: 42px;

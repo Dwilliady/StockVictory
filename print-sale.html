@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>Invoice Penjualan</title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet">
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+        rel="stylesheet">
+
+    <style>
+
+        body {
+            background: #f5f5f5;
+            font-family: Arial, sans-serif;
+        }
+
+        .invoice-container {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 20px auto;
+            background: #ffffff;
+            padding: 15mm;
+        }
+
+        .company-name {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .invoice-title {
+            font-size: 28px;
+            font-weight: 700;
+            text-align: right;
+        }
+
+        .invoice-info {
+            font-size: 14px;
+        }
+
+        .table th {
+            background: #f1f1f1 !important;
+        }
+
+        .total-label {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .total-value {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .footer-note {
+            margin-top: 50px;
+            text-align: center;
+            color: #666;
+        }
+
+
+        @media print {
+
+            @page {
+                size: A4;
+                margin: 15mm;
+            }
+
+            body {
+                background: #ffffff;
+            }
+
+            .invoice-container {
+                width: 100%;
+                min-height: auto;
+                margin: 0;
+                padding: 0;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- PRINT BUTTON -->
+
+    <div class="container mt-3 mb-3 no-print">
+
+        <div class="d-flex justify-content-end gap-2">
+
+            <button
+                type="button"
+                class="btn btn-primary"
+                onclick="window.print()">
+
+                <i class="bi bi-printer me-1"></i>
+                Print Invoice
+
+            </button>
+
+            <button
+                type="button"
+                class="btn btn-secondary"
+                onclick="window.close()">
+
+                Tutup
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- INVOICE -->
+
+    <div
+        id="invoiceContent"
+        class="invoice-container">
+
+        <div class="text-center py-5">
+
+            Memuat invoice...
+
+        </div>
+
+    </div>
+
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+    </script>
+
+    <script src="js/api.js"></script>
+
+    <script src="js/print-sale.js"></script>
+
+
+</body>
+
+</html>

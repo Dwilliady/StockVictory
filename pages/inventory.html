@@ -24,140 +24,11 @@
 
     </div>
 
+    <!-- INVENTORY GRID -->
 
-    <div class="row g-4">
-
-        <!-- POLYESTER -->
-
-        <div class="col-12 col-xl-6">
-
-            <div class="card dashboard-card h-100">
-
-                <div class="card-header bg-white py-3">
-
-                    <h5 class="fw-bold mb-0">
-                        <i class="bi bi-box me-2"></i>
-                        Polyester
-                    </h5>
-
-                    <small class="text-muted">
-                        Stock Polyester berdasarkan warna
-                    </small>
-
-                </div>
-
-                <div class="card-body p-0">
-
-                    <div class="table-responsive">
-
-                        <table class="table table-hover align-middle mb-0">
-
-                            <thead class="table-light">
-
-                                <tr>
-                                    <th class="ps-3">No. Warna</th>
-                                    <th>Nama Warna</th>
-                                    <th class="text-end">Stock</th>
-                                    <th class="text-center">Status</th>
-                                </tr>
-
-                            </thead>
-
-                            <tbody id="polyesterStockGrid">
-                            </tbody>
-
-                        </table>
-
-                    </div>
-
-                </div>
-
-                <div class="card-footer bg-white">
-
-                    <div class="d-flex justify-content-between">
-
-                        <span class="text-muted">
-                            Total Stock
-                        </span>
-
-                        <strong id="polyesterTotalStock">
-                            0
-                        </strong>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- NYLON -->
-
-        <div class="col-12 col-xl-6">
-
-            <div class="card dashboard-card h-100">
-
-                <div class="card-header bg-white py-3">
-
-                    <h5 class="fw-bold mb-0">
-                        <i class="bi bi-box me-2"></i>
-                        Nylon
-                    </h5>
-
-                    <small class="text-muted">
-                        Stock Nylon berdasarkan warna
-                    </small>
-
-                </div>
-
-                <div class="card-body p-0">
-
-                    <div class="table-responsive">
-
-                        <table class="table table-hover align-middle mb-0">
-
-                            <thead class="table-light">
-
-                                <tr>
-                                    <th class="ps-3">No. Warna</th>
-                                    <th>Nama Warna</th>
-                                    <th class="text-end">Stock</th>
-                                    <th class="text-center">Status</th>
-                                </tr>
-
-                            </thead>
-
-                            <tbody id="nylonStockGrid">
-                            </tbody>
-
-                        </table>
-
-                    </div>
-
-                </div>
-
-                <div class="card-footer bg-white">
-
-                    <div class="d-flex justify-content-between">
-
-                        <span class="text-muted">
-                            Total Stock
-                        </span>
-
-                        <strong id="nylonTotalStock">
-                            0
-                        </strong>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
+    <div
+        id="inventoryGrid"
+        class="row g-4">
     </div>
 
 </div>
@@ -205,14 +76,6 @@
 
                         <option value="">
                             -- Pilih Item --
-                        </option>
-
-                        <option value="Polyester">
-                            Polyester
-                        </option>
-
-                        <option value="Nylon">
-                            Nylon
                         </option>
 
                     </select>

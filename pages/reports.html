@@ -1,0 +1,440 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+    <div>
+        <h3 class="mb-1">Laporan</h3>
+        <div class="text-muted">
+            Laporan penjualan berdasarkan periode
+        </div>
+    </div>
+
+</div>
+
+
+<!-- FILTER -->
+<div class="card shadow-sm mb-4">
+
+    <div class="card-body">
+
+        <div class="row g-3 align-items-end">
+
+            <div class="col-md-4">
+
+                <label
+                    for="reportDateFrom"
+                    class="form-label">
+                    Tanggal Dari
+                </label>
+
+                <input
+                    type="date"
+                    id="reportDateFrom"
+                    class="form-control">
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <label
+                    for="reportDateTo"
+                    class="form-label">
+                    Tanggal Sampai
+                </label>
+
+                <input
+                    type="date"
+                    id="reportDateTo"
+                    class="form-control">
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <div class="d-flex gap-2">
+
+                    <button
+                        type="button"
+                        class="btn btn-primary"
+                        onclick="loadReports()">
+
+                        <i class="bi bi-search me-1"></i>
+                        Tampilkan
+
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        onclick="resetReportFilter()">
+
+                        <i class="bi bi-arrow-clockwise me-1"></i>
+                        Reset
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- SUMMARY -->
+<div class="row g-4 mb-4">
+
+    <div class="col-md-4">
+
+        <div class="card shadow-sm h-100">
+
+            <div class="card-body">
+
+                <div class="text-muted mb-2">
+                    Total Transaksi
+                </div>
+
+                <div
+                    id="reportTotalTransaction"
+                    class="fs-3 fw-bold">
+                    0
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="col-md-4">
+
+        <div class="card shadow-sm h-100">
+
+            <div class="card-body">
+
+                <div class="text-muted mb-2">
+                    Total Penjualan
+                </div>
+
+                <div
+                    id="reportTotalSales"
+                    class="fs-3 fw-bold">
+                    Rp0
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="col-md-4">
+
+        <div class="card shadow-sm h-100">
+
+            <div class="card-body">
+
+                <div class="text-muted mb-2">
+                    Total Qty Terjual
+                </div>
+
+                <div
+                    id="reportTotalQty"
+                    class="fs-3 fw-bold">
+                    0
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- SALES BY ITEM -->
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header">
+
+        <strong>
+            Penjualan per Item
+        </strong>
+
+    </div>
+
+
+    <div class="card-body p-0">
+
+        <div class="table-responsive">
+
+            <table class="table table-hover mb-0">
+
+                <thead>
+
+                    <tr>
+
+                        <th
+                            style="width: 60px;"
+                            class="text-center">
+                            No
+                        </th>
+
+                        <th>
+                            Item
+                        </th>
+
+                        <th
+                            class="text-end">
+                            Qty Terjual
+                        </th>
+
+                        <th
+                            class="text-end">
+                            Total Penjualan
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody id="reportItemTableBody">
+
+                    <tr>
+
+                        <td
+                            colspan="4"
+                            class="text-center text-muted py-4">
+
+                            Belum ada data
+
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+
+                <tfoot>
+
+                    <tr>
+
+                        <th
+                            colspan="2"
+                            class="text-end">
+                            TOTAL
+                        </th>
+
+                        <th
+                            id="reportItemTotalQty"
+                            class="text-end">
+                            0
+                        </th>
+
+                        <th
+                            id="reportItemTotalSales"
+                            class="text-end">
+                            Rp0
+                        </th>
+
+                    </tr>
+
+                </tfoot>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- SALES DETAIL -->
+<div class="card shadow-sm">
+
+    <div class="card-header">
+
+        <strong>
+            Detail Penjualan
+        </strong>
+
+    </div>
+
+
+    <div class="card-body p-0">
+
+        <div class="table-responsive">
+
+            <table class="table table-hover mb-0">
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Invoice
+                        </th>
+
+                        <th>
+                            Tanggal
+                        </th>
+
+                        <th>
+                            Customer
+                        </th>
+
+                        <th>
+                            Item
+                        </th>
+
+                        <th>
+                            Warna
+                        </th>
+
+                        <th
+                            class="text-end">
+                            Qty
+                        </th>
+
+                        <th
+                            class="text-end">
+                            Harga
+                        </th>
+
+                        <th
+                            class="text-end">
+                            Subtotal
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody id="reportDetailTableBody">
+
+                    <tr>
+
+                        <td
+                            colspan="8"
+                            class="text-center text-muted py-4">
+
+                            Belum ada data
+
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- STOCK MOVEMENT -->
+<div class="card shadow-sm mt-4">
+
+    <div class="card-header d-flex justify-content-between align-items-center">
+
+        <strong>
+            Mutasi Stock
+        </strong>
+
+        <div class="d-flex gap-2">
+
+            <span
+                id="reportStockIn"
+                class="badge bg-success">
+                IN: 0
+            </span>
+
+            <span
+                id="reportStockOut"
+                class="badge bg-danger">
+                OUT: 0
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <div class="card-body p-0">
+
+        <div class="table-responsive">
+
+            <table class="table table-hover mb-0">
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Tanggal
+                        </th>
+
+                        <th>
+                            Item
+                        </th>
+
+                        <th>
+                            Warna
+                        </th>
+
+                        <th class="text-center">
+                            Tipe
+                        </th>
+
+                        <th class="text-end">
+                            Qty
+                        </th>
+
+                        <th>
+                            Referensi
+                        </th>
+
+                        <th>
+                            Catatan
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody id="reportStockTableBody">
+
+                    <tr>
+
+                        <td
+                            colspan="7"
+                            class="text-center text-muted py-4">
+
+                            Belum ada data
+
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>

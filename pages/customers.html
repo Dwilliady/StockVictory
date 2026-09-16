@@ -1,0 +1,356 @@
+<div class="container-fluid">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h4 class="mb-1">
+                Master Customer
+            </h4>
+
+            <small class="text-muted">
+                Pengelolaan data customer
+            </small>
+        </div>
+
+        <button
+            type="button"
+            class="btn btn-primary"
+            onclick="openCustomerModal()">
+
+            <i class="bi bi-plus-lg"></i>
+            Tambah Customer
+
+        </button>
+
+    </div>
+
+
+    <!-- SEARCH -->
+
+    <div class="card shadow-sm">
+
+        <div class="card-body">
+
+            <div class="row mb-3">
+
+                <div class="col-md-6">
+
+                    <input
+                        type="text"
+                        id="customerSearch"
+                        class="form-control"
+                        placeholder="Cari Customer..."
+                        oninput="filterCustomers()">
+
+                </div>
+
+            </div>
+
+
+            <!-- TABLE -->
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle">
+
+                    <thead class="table-light">
+
+                        <tr>
+
+                            <th>
+                                Kode
+                            </th>
+
+                            <th>
+                                Nama Customer
+                            </th>
+
+                            <th>
+                                NPWP
+                            </th>
+
+                            <th>
+                                Kota
+                            </th>
+
+                            <th>
+                                Telepon
+                            </th>
+
+                            <th class="text-center">
+                                Status
+                            </th>
+
+                            <th
+                                class="text-center"
+                                style="width: 120px;">
+
+                                Aksi
+
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="customerTableBody">
+
+                        <tr>
+
+                            <td
+                                colspan="7"
+                                class="text-center text-muted py-4">
+
+                                Belum ada data customer
+
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     MODAL CUSTOMER
+===================================================== -->
+
+<div
+    class="modal fade"
+    id="customerModal"
+    tabindex="-1"
+    aria-hidden="true">
+
+    <div class="modal-dialog modal-lg">
+
+        <div class="modal-content">
+
+
+            <!-- HEADER -->
+
+            <div class="modal-header">
+
+                <h5
+                    class="modal-title"
+                    id="customerModalTitle">
+
+                    Tambah Customer
+
+                </h5>
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal">
+                </button>
+
+            </div>
+
+
+            <!-- BODY -->
+
+            <div class="modal-body">
+
+                <input
+                    type="hidden"
+                    id="customerId">
+
+
+                <div class="row">
+
+
+                    <!-- KODE -->
+
+                    <div class="col-md-6 mb-3">
+
+                        <label class="form-label">
+                            Kode Customer
+                        </label>
+
+                        <input
+                            type="text"
+                            id="customerCode"
+                            class="form-control"
+                            readonly
+                            placeholder="Otomatis - Tidak Perlu diisi">
+
+                    </div>
+
+
+                    <!-- NAMA -->
+
+                    <div class="col-md-6 mb-3">
+
+                        <label class="form-label">
+                            Nama Customer
+                        </label>
+
+                        <input
+                            type="text"
+                            id="companyName"
+                            class="form-control"
+                            maxlength="150"
+                            placeholder="Nama PT / Perusahaan">
+
+                    </div>
+
+
+                    <!-- NPWP -->
+
+                    <div class="col-md-6 mb-3">
+
+                        <label class="form-label">
+                            NPWP
+                        </label>
+
+                        <input
+                            type="text"
+                            id="customerNpwp"
+                            class="form-control"
+                            maxlength="30"
+                            placeholder="Nomor NPWP">
+
+                    </div>
+
+
+                    <!-- KOTA -->
+
+                    <div class="col-md-6 mb-3">
+
+                        <label class="form-label">
+                            Kota
+                        </label>
+
+                        <input
+                            type="text"
+                            id="customerCity"
+                            class="form-control"
+                            maxlength="100"
+                            placeholder="Contoh: Jakarta">
+
+                    </div>
+
+
+                    <!-- TELEPON -->
+
+                    <div class="col-md-6 mb-3">
+
+                        <label class="form-label">
+                            Telepon
+                        </label>
+
+                        <input
+                            type="text"
+                            id="customerPhone"
+                            class="form-control"
+                            maxlength="30"
+                            placeholder="Nomor telepon">
+
+                    </div>
+
+
+                    <!-- EMAIL -->
+
+                    <div class="col-md-6 mb-3">
+
+                        <label class="form-label">
+                            Email
+                        </label>
+
+                        <input
+                            type="email"
+                            id="customerEmail"
+                            class="form-control"
+                            maxlength="150"
+                            placeholder="Email customer">
+
+                    </div>
+
+
+                    <!-- ALAMAT -->
+
+                    <div class="col-12 mb-3">
+
+                        <label class="form-label">
+                            Alamat
+                        </label>
+
+                        <textarea
+                            id="customerAddress"
+                            class="form-control"
+                            rows="3"
+                            placeholder="Alamat customer"></textarea>
+
+                    </div>
+
+
+                    <!-- STATUS -->
+
+                    <div class="col-md-6 mb-3">
+
+                        <label class="form-label">
+                            Status
+                        </label>
+
+                        <select
+                            id="customerStatus"
+                            class="form-select">
+
+                            <option value="true">
+                                Aktif
+                            </option>
+
+                            <option value="false">
+                                Nonaktif
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- FOOTER -->
+
+            <div class="modal-footer">
+
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal">
+
+                    Batal
+
+                </button>
+
+
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    onclick="saveCustomer()">
+
+                    Simpan
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>

@@ -1,0 +1,166 @@
+<div class="container-fluid">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h4 class="mb-1">
+                Master Harga
+            </h4>
+
+            <small class="text-muted">
+                Pengaturan harga jual berdasarkan Item
+            </small>
+        </div>
+
+        <button
+            type="button"
+            class="btn btn-primary"
+            onclick="openPriceModal()">
+
+            <i class="bi bi-plus-lg"></i>
+            Tambah Harga
+
+        </button>
+
+    </div>
+
+
+    <!-- PRICE GRID -->
+    <div
+        id="priceGrid"
+        class="row g-4">
+
+        <!-- Card Item akan dibuat oleh prices.js -->
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     MODAL TAMBAH HARGA
+===================================================== -->
+
+<div
+    class="modal fade"
+    id="priceModal"
+    tabindex="-1"
+    aria-hidden="true">
+
+    <div class="modal-dialog">
+
+        <div class="modal-content">
+
+
+            <!-- HEADER -->
+
+            <div class="modal-header">
+
+                <h5 class="modal-title">
+                    Tambah Harga
+                </h5>
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal">
+                </button>
+
+            </div>
+
+
+            <!-- BODY -->
+
+            <div class="modal-body">
+
+
+                <!-- ITEM -->
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+                        Item
+                    </label>
+
+                    <select
+                        id="priceItem"
+                        class="form-select">
+
+                        <option value="">
+                            -- Pilih Item --
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- HARGA -->
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+                        Harga
+                    </label>
+
+                    <input
+                        type="number"
+                        id="priceValue"
+                        class="form-control"
+                        min="0"
+                        step="0.01"
+                        placeholder="Contoh: 25000">
+
+                </div>
+
+
+                <!-- TANGGAL -->
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+                        Berlaku Mulai
+                    </label>
+
+                    <input
+                        type="date"
+                        id="priceEffectiveFrom"
+                        class="form-control">
+
+                </div>
+
+
+            </div>
+
+
+            <!-- FOOTER -->
+
+            <div class="modal-footer">
+
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal">
+
+                    Batal
+
+                </button>
+
+
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    onclick="savePrice()">
+
+                    Simpan
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>

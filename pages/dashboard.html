@@ -15,31 +15,7 @@
 
     <div class="row g-3">
 
-
-        <div class="col-12 col-md-6 col-xl-3">
-
-            <div class="card dashboard-card">
-
-                <div class="card-body">
-
-                    <div class="text-muted">
-                        Total Item
-                    </div>
-
-                    <h2
-                        id="totalItems"
-                        class="fw-bold mt-2">
-                        0
-                    </h2>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <div class="col-12 col-md-6 col-xl-3">
+        <div class="col-12 col-md-6 col-xl-4">
 
             <div class="card dashboard-card">
 
@@ -62,7 +38,7 @@
         </div>
 
 
-        <div class="col-12 col-md-6 col-xl-3">
+        <div class="col-12 col-md-6 col-xl-4">
 
             <div class="card dashboard-card">
 
@@ -85,7 +61,7 @@
         </div>
 
 
-        <div class="col-12 col-md-6 col-xl-3">
+        <div class="col-12 col-md-6 col-xl-4">
 
             <div class="card dashboard-card">
 
@@ -108,6 +84,40 @@
         </div>
 
     </div>
+
+    <div class="row g-4 mt-1">
+
+    <div class="col-12 col-xl-7">
+        <div class="card dashboard-card h-100">
+            <div class="card-body">
+                <h5 class="fw-bold mb-1">Penjualan YTD</h5>
+                <div class="text-muted small mb-3">
+                    Penjualan dari Januari sampai bulan berjalan
+                </div>
+
+                <div style="height: 320px;">
+                    <canvas id="salesYtdChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-xl-5">
+        <div class="card dashboard-card h-100">
+            <div class="card-body">
+                <h5 class="fw-bold mb-1">Penjualan MTD</h5>
+                <div class="text-muted small mb-3">
+                    Penjualan bulan berjalan
+                </div>
+
+                <div style="height: 320px;">
+                    <canvas id="salesMtdChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
 
 
     <div class="card dashboard-card mt-4">

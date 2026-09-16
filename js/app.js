@@ -95,21 +95,48 @@ const menuConfig = [
 ];
 
 
-let currentPage = "dashboard";
+let currentPage = null;
 
+
+// =========================================
+// DEFAULT PAGE BERDASARKAN ROLE
+// =========================================
+
+function getDefaultPage(role) {
+
+    role = String(role || "")
+        .trim()
+        .toLowerCase();
+
+    if (role === "admin") {
+        return "dashboard";
+    }
+
+    if (role === "kasir") {
+        return "inventory";
+    }
+
+    return null;
+}
+
+
+// =========================================
+// INIT APPLICATION
+// =========================================
 
 document.addEventListener(
     "DOMContentLoaded",
     async function () {
 
         // =========================================
-        // CEK SESSION SUPABASE
+        // CEK SESSION
         // =========================================
 
         const {
             data: { session },
             error
         } = await supabaseClient.auth.getSession();
+
 
         if (error || !session) {
 
@@ -155,6 +182,36 @@ document.addEventListener(
 
 
         // =========================================
+        // NORMALISASI ROLE
+        // =========================================
+
+        user.role = String(user.role || "")
+            .trim()
+            .toLowerCase();
+
+
+        // =========================================
+        // CEK ROLE VALID
+        // =========================================
+
+        if (!permissions[user.role]) {
+
+            console.error(
+                "Role tidak valid:",
+                user.role
+            );
+
+            await supabaseClient.auth.signOut();
+
+            alert("Role user tidak valid.");
+
+            window.location.href = "index.html";
+
+            return;
+        }
+
+
+        // =========================================
         // CEK USER AKTIF
         // =========================================
 
@@ -171,7 +228,7 @@ document.addEventListener(
 
 
         // =========================================
-        // SIMPAN PROFILE UNTUK UI
+        // SIMPAN PROFILE
         // =========================================
 
         sessionStorage.setItem(
@@ -184,20 +241,30 @@ document.addEventListener(
         // TAMPILKAN USERNAME
         // =========================================
 
-        document.getElementById(
-            "currentUsername"
-        ).textContent =
-            user.username;
+        const usernameElement =
+            document.getElementById("currentUsername");
+
+        if (usernameElement) {
+
+            usernameElement.textContent =
+                user.username;
+
+        }
 
 
         // =========================================
         // TAMPILKAN ROLE
         // =========================================
 
-        document.getElementById(
-            "currentRole"
-        ).textContent =
-            user.role.toUpperCase();
+        const roleElement =
+            document.getElementById("currentRole");
+
+        if (roleElement) {
+
+            roleElement.textContent =
+                user.role.toUpperCase();
+
+        }
 
 
         // =========================================
@@ -211,75 +278,164 @@ document.addEventListener(
         // LOGOUT
         // =========================================
 
-        document.getElementById(
-            "logoutButton"
-        ).addEventListener(
-            "click",
-            logout
-        );
+        const logoutButton =
+            document.getElementById("logoutButton");
+
+        if (logoutButton) {
+
+            logoutButton.addEventListener(
+                "click",
+                logout
+            );
+
+        }
 
 
         // =========================================
-        // SIDEBAR MOBILE
+        // SIDEBAR TOGGLE
         // =========================================
 
-        document.getElementById(
-            "sidebarToggle"
-        ).addEventListener(
-            "click",
-            function () {
-
-                document
-                    .getElementById("sidebar")
-                    .classList.toggle("show");
-
-            }
-        );
+        initSidebarToggle();
 
 
         // =========================================
-        // LOAD DEFAULT PAGE
+        // LOAD PAGE
         // =========================================
 
-        loadPage("dashboard");
+        const params =
+            new URLSearchParams(
+                window.location.search
+            );
+
+        const requestedPage =
+            params.get("page");
+
+
+        // Kalau URL tidak punya ?page=
+        // gunakan default berdasarkan role
+        if (!requestedPage) {
+
+            loadPage(
+                getDefaultPage(user.role)
+            );
+
+            return;
+        }
+
+
+        // Kalau URL punya page,
+        // loadPage akan cek permission
+        loadPage(requestedPage);
 
     }
 );
 
-console.log("PROFILE USER:", user);
-console.log("ROLE:", user.role);
-console.log("ROLE TYPE:", typeof user.role);
-console.log("ALLOWED PAGES:", permissions[user.role]);
+
+// =========================================
+// SIDEBAR TOGGLE
+// =========================================
+
+function initSidebarToggle() {
+
+    const sidebar =
+        document.getElementById("sidebar");
+
+    const sidebarToggle =
+        document.getElementById("sidebarToggle");
+
+
+    if (!sidebar || !sidebarToggle) {
+        return;
+    }
+
+
+    sidebarToggle.addEventListener(
+        "click",
+        function () {
+
+            if (window.innerWidth <= 991.98) {
+
+                sidebar.classList.toggle("show");
+
+            } else {
+
+                sidebar.classList.toggle("collapsed");
+
+            }
+
+        }
+    );
+
+}
+
+
+// =========================================
+// BUILD SIDEBAR
+// =========================================
 
 function buildSidebar(role) {
 
     const container =
         document.getElementById("sidebarMenu");
 
+
     if (!container) {
-        console.error("sidebarMenu tidak ditemukan.");
+
+        console.error(
+            "sidebarMenu tidak ditemukan."
+        );
+
         return;
     }
 
+
     container.innerHTML = "";
 
-    // Pastikan role selalu lowercase
-    role = String(role || "").trim().toLowerCase();
 
-    console.log("Building sidebar for role:", role);
+    role = String(role || "")
+        .trim()
+        .toLowerCase();
+
 
     const allowedPages =
         permissions[role] || [];
 
-    console.log("Allowed pages:", allowedPages);
+
+    let currentSection = null;
+
 
     menuConfig.forEach(function (menu) {
 
-        // Section
+        // =====================================
+        // SECTION
+        // =====================================
+
         if (menu.section) {
 
-            // Jangan tampilkan section kalau tidak ada
-            // menu yang boleh ditampilkan di bawahnya.
+            currentSection = menu;
+
+            return;
+        }
+
+
+        // =====================================
+        // CEK PERMISSION
+        // =====================================
+
+        if (!allowedPages.includes(menu.id)) {
+            return;
+        }
+
+
+        // =====================================
+        // BUAT MENU
+        // =====================================
+
+        if (
+            currentSection &&
+            !currentSection.rendered
+        ) {
+
             const section =
                 document.createElement("div");
 
@@ -287,44 +443,80 @@ function buildSidebar(role) {
                 "sidebar-section";
 
             section.textContent =
-                menu.section;
+                currentSection.section;
 
             container.appendChild(section);
 
-            return;
+            currentSection.rendered = true;
         }
 
-        // Cek permission
-        if (!allowedPages.includes(menu.id)) {
-            return;
-        }
 
         const link =
             document.createElement("a");
 
-        link.href = "#";
-        link.className = "sidebar-link";
-        link.dataset.page = menu.id;
+        link.href =
+            `app.html?page=${menu.id}`;
+
+        link.className =
+            "sidebar-link";
+
+        link.dataset.page =
+            menu.id;
+
 
         link.innerHTML = `
             <i class="bi ${menu.icon}"></i>
             <span>${menu.title}</span>
         `;
 
-        link.addEventListener("click", function (e) {
 
-            e.preventDefault();
+        link.addEventListener(
+            "click",
+            function (e) {
 
-            loadPage(menu.id);
+                e.preventDefault();
 
-        });
+                loadPage(menu.id);
+
+
+                // Tutup sidebar di mobile
+                if (window.innerWidth <= 991.98) {
+
+                    const sidebar =
+                        document.getElementById("sidebar");
+
+                    if (sidebar) {
+
+                        sidebar.classList.remove("show");
+
+                    }
+
+                }
+
+            }
+        );
+
 
         container.appendChild(link);
 
     });
 
+
+    // Reset flag section
+    menuConfig.forEach(function (menu) {
+
+        if (menu.section) {
+            menu.rendered = false;
+        }
+
+    });
+
 }
 
+
+// =========================================
+// LOAD PAGE
+// =========================================
 
 function loadPage(page) {
 
@@ -336,24 +528,92 @@ function loadPage(page) {
         );
 
 
+    // =========================================
+    // USER TIDAK ADA
+    // =========================================
+
+    if (!user) {
+
+        window.location.href =
+            "index.html";
+
+        return;
+    }
+
+
+    const role =
+        String(user.role || "")
+            .trim()
+            .toLowerCase();
+
+
+    const allowedPages =
+        permissions[role] || [];
+
+
+    // =========================================
+    // CEK PAGE
+    // =========================================
+
     if (
-        !user ||
-        !permissions[user.role]?.includes(page)
+        !page ||
+        !allowedPages.includes(page)
     ) {
 
-        page = "dashboard";
+        page =
+            getDefaultPage(role);
 
+    }
+
+
+    // Kalau tetap tidak ada page
+    if (!page) {
+
+        console.error(
+            "Tidak ada default page untuk role:",
+            role
+        );
+
+        return;
     }
 
 
     currentPage = page;
 
 
+    // =========================================
+    // UPDATE URL
+    // =========================================
+
+    const currentUrl =
+        `app.html?page=${page}`;
+
+
+    if (
+        window.location.href !==
+        new URL(currentUrl, window.location.href).href
+    ) {
+
+        window.history.pushState(
+            {
+                page: page
+            },
+            "",
+            currentUrl
+        );
+
+    }
+
+
+    // =========================================
+    // LOAD HTML
+    // =========================================
+
     fetch(
         `pages/${page}.html`
     )
 
-        .then(response => {
+        .then(function (response) {
 
             if (!response.ok) {
 
@@ -367,11 +627,22 @@ function loadPage(page) {
 
         })
 
-        .then(html => {
 
-            document.getElementById(
-                "pageContent"
-            ).innerHTML = html;
+        .then(function (html) {
+
+            const pageContent =
+                document.getElementById(
+                    "pageContent"
+                );
+
+
+            if (!pageContent) {
+                return;
+            }
+
+
+            pageContent.innerHTML =
+                html;
 
 
             updateActiveMenu(page);
@@ -381,104 +652,235 @@ function loadPage(page) {
 
         })
 
-        .catch(error => {
 
-            document.getElementById(
-                "pageContent"
-            ).innerHTML = `
-                <div class="alert alert-danger">
-                    Gagal membuka halaman.
-                    <br>
-                    ${error.message}
-                </div>
-            `;
+        .catch(function (error) {
+
+            console.error(
+                "Load page error:",
+                error
+            );
+
+
+            const pageContent =
+                document.getElementById(
+                    "pageContent"
+                );
+
+
+            if (pageContent) {
+
+                pageContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        Gagal membuka halaman.
+                        <br>
+                        ${escapeHtml(
+                            error.message
+                        )}
+                    </div>
+                `;
+
+            }
 
         });
 
 }
 
 
+// =========================================
+// ACTIVE MENU
+// =========================================
+
 function updateActiveMenu(page) {
 
     document
         .querySelectorAll(".sidebar-link")
-        .forEach(
-            link => {
+        .forEach(function (link) {
 
-                link.classList.toggle(
-                    "active",
-                    link.dataset.page === page
-                );
+            link.classList.toggle(
+                "active",
+                link.dataset.page === page
+            );
 
-            }
-        );
+        });
 
 }
 
+
+// =========================================
+// INITIALIZE PAGE
+// =========================================
 
 function initializePage(page) {
 
     switch (page) {
 
         case "dashboard":
-            if (typeof initDashboard === "function")
+
+            if (
+                typeof initDashboard ===
+                "function"
+            ) {
+
                 initDashboard();
+
+            }
+
             break;
+
 
         case "inventory":
-            if (typeof initInventory === "function")
+
+            if (
+                typeof initInventory ===
+                "function"
+            ) {
+
                 initInventory();
+
+            }
+
             break;
+
 
         case "sales":
-            if (typeof initSales === "function")
+
+            if (
+                typeof initSales ===
+                "function"
+            ) {
+
                 initSales();
+
+            }
+
             break;
+
 
         case "sales-history":
-            if (typeof initSalesHistory === "function")
+
+            if (
+                typeof initSalesHistory ===
+                "function"
+            ) {
+
                 initSalesHistory();
+
+            }
+
             break;
+
 
         case "items":
-            if (typeof initItems === "function")
+
+            if (
+                typeof initItems ===
+                "function"
+            ) {
+
                 initItems();
+
+            }
+
             break;
+
 
         case "colors":
-            if (typeof initColors === "function")
+
+            if (
+                typeof initColors ===
+                "function"
+            ) {
+
                 initColors();
+
+            }
+
             break;
+
 
         case "prices":
-            if (typeof initPrices === "function")
+
+            if (
+                typeof initPrices ===
+                "function"
+            ) {
+
                 initPrices();
+
+            }
+
             break;
+
 
         case "customers":
-            if (typeof initCustomers === "function")
+
+            if (
+                typeof initCustomers ===
+                "function"
+            ) {
+
                 initCustomers();
+
+            }
+
             break;
 
+
         case "reports":
-            if (typeof initReports === "function")
+
+            if (
+                typeof initReports ===
+                "function"
+            ) {
+
                 initReports();
+
+            }
+
             break;
 
     }
 
 }
 
+
+// =========================================
+// CHECK AUTH
+// =========================================
+
 async function checkAuth() {
+
     const {
         data: { session },
         error
     } = await supabaseClient.auth.getSession();
 
+
     if (error || !session) {
-        window.location.href = "index.html";
+
+        window.location.href =
+            "index.html";
+
         return null;
     }
 
+
     return session;
+
+}
+
+
+// =========================================
+// ESCAPE HTML
+// =========================================
+
+function escapeHtml(value) {
+
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
 }
