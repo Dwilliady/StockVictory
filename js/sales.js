@@ -528,6 +528,7 @@ function setupSaleBarcodeScanner() {
                 barcode
             );
 
+
             playSaleScanBeep();
         }
     );
@@ -823,7 +824,7 @@ async function processSaleBarcode(
 
 
         showSaleBarcodeFeedback(
-            `Qty ${inventory.items.code} - ${inventory.colors.color_no} menjadi ${currentQty + 1}`
+            `${inventory.items.code} - ${inventory.colors.color_no} berhail ditambahkan. Qty sekarang: ${qtyInput.value}`
         );
 
 
@@ -1123,11 +1124,7 @@ function showSaleBarcodeFeedback(
         800
     );
 
-    console.log(
-        "BARCODE:",
-        message
-    );
-
+    showSaleScanSuccess(message);
 }
 
 
@@ -2638,4 +2635,37 @@ function playSaleScanBeep() {
 
     }
 
+}
+
+function showSaleScanSuccess(message) {
+    let toast = document.getElementById("saleScanSuccessToast");
+
+    if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "saleScanSuccessToast";
+
+        toast.style.position = "fixed";
+        toast.style.top = "20px";
+        toast.style.right = "20px";
+        toast.style.zIndex = "99999";
+        toast.style.minWidth = "280px";
+
+        document.body.appendChild(toast);
+    }
+
+    toast.innerHTML = `
+        <div class="alert alert-success shadow-lg mb-0 d-flex align-items-center">
+            <i class="bi bi-check-circle-fill fs-4 me-2"></i>
+            <div>
+                <div class="fw-bold">Scan berhasil</div>
+                <div class="small">${escapeHtml(message)}</div>
+            </div>
+        </div>
+    `;
+
+    clearTimeout(toast._timer);
+
+    toast._timer = setTimeout(() => {
+        toast.remove();
+    }, 1200);
 }
