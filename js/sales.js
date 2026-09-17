@@ -1232,18 +1232,17 @@ function addSaleRow() {
 
         <!-- QTY -->
 
-        <td>
-
+        <td class="sale-qty-cell">
             <input
                 type="number"
-                class="form-control text-end"
+                class="form-control form-control-sm text-center sale-qty-input"
                 id="saleQty_${rowId}"
                 min="1"
                 step="1"
                 value="1"
+                style="min-width: 65px;"
                 onchange="calculateSaleRow(${rowId})"
                 oninput="calculateSaleRow(${rowId})">
-
         </td>
 
 
@@ -2362,217 +2361,155 @@ async function startSaleCameraScanner() {
 }
 
 async function startSelectedSaleCamera() {
+    const status = document.getElementById("saleCameraStatus");
 
-    const status =
-        document.getElementById(
-            "saleCameraStatus"
-        );
+    if (!saleCameraScanner) return;
+    if (!saleCameraDevices || saleCameraDevices.length === 0) return;
 
+    const camera = saleCameraDevices[saleCameraIndex];
 
-    if (!saleCameraScanner) {
-
-        return;
-
-    }
-
-
-    if (
-        !saleCameraDevices ||
-        saleCameraDevices.length === 0
-    ) {
-
-        return;
-
-    }
-
-
-    const camera =
-        saleCameraDevices[
-            saleCameraIndex
-        ];
-
-
-    if (!camera) {
-
-        return;
-
-    }
-
-
-    /*
-       Kalau scanner sedang jalan,
-       stop dulu.
-    */
-
-    try {
-
-        await saleCameraScanner.stop();
-
-    } catch (error) {
-
-        /*
-           Abaikan kalau memang belum aktif
-        */
-
-    }
-
+    if (!camera) return;
 
     saleCameraProcessing = false;
 
-
     if (status) {
-
         status.innerHTML =
             `<span class="text-primary">
                 <i class="bi bi-camera me-1"></i>
                 Mengaktifkan kamera...
-             </span>`;
-
+            </span>`;
     }
 
-
     try {
-
         await saleCameraScanner.start(
-
             camera.id,
-
             {
-
                 fps: 10,
-
                 qrbox: {
                     width: 200,
                     height: 200
                 },
-
                 aspectRatio: 1.0
-
             },
 
-
             async function (decodedText) {
-
-                if (saleCameraProcessing) {
-
-                    return;
-
-                }
-
+                if (saleCameraProcessing) return;
 
                 saleCameraProcessing = true;
 
-
                 try {
-
                     const success =
                         await processSaleBarcode(decodedText);
 
                     if (success) {
                         playSaleScanBeep();
-                    }
 
-
-                    if (status) {
-
-                        status.innerHTML =
-                            `<span class="text-success">
-                                <i class="bi bi-check-circle me-1"></i>
-                                ${escapeHtml(decodedText)}
-                             </span>`;
-
+                        if (status) {
+                            status.innerHTML =
+                                `<span class="text-success">
+                                    <i class="bi bi-check-circle me-1"></i>
+                                    ${escapeHtml(decodedText)}
+                                </span>`;
+                        }
                     }
 
                 } finally {
-
-                    setTimeout(
-                        function () {
-
-                            saleCameraProcessing =
-                                false;
-
-                        },
-                        700
-                    );
-
+                    setTimeout(function () {
+                        saleCameraProcessing = false;
+                    }, 700);
                 }
-
             },
 
-
             function () {
-
-                /*
-                   Scan gagal / belum menemukan QR.
-                   Tidak perlu menampilkan error.
-                */
-
+                // ignore scan failure
             }
-
         );
 
-
         if (status) {
-
             status.innerHTML =
                 `<span class="text-success">
                     <i class="bi bi-camera-fill me-1"></i>
                     ${escapeHtml(camera.label || "Kamera aktif")}
-                 </span>`;
-
+                </span>`;
         }
 
     } catch (error) {
-
-        console.error(
-            "Start selected camera error:",
-            error
-        );
-
+        console.error("Start selected camera error:", error);
 
         if (status) {
-
             status.innerHTML =
                 `<span class="text-danger">
                     Gagal membuka kamera.
-                 </span>`;
-
+                </span>`;
         }
-
     }
-
 }
 
 async function switchSaleCamera() {
-
-    if (
-        !saleCameraDevices ||
-        saleCameraDevices.length < 2
-    ) {
-
-        alert(
-            "Perangkat hanya memiliki satu kamera."
-        );
-
+    if (!saleCameraDevices || saleCameraDevices.length < 2) {
+        alert("Perangkat hanya memiliki satu kamera.");
         return;
-
     }
-
 
     saleCameraIndex++;
 
-    if (
-        saleCameraIndex >=
-        saleCameraDevices.length
-    ) {
-
+    if (saleCameraIndex >= saleCameraDevices.length) {
         saleCameraIndex = 0;
-
     }
 
+    const reader = document.getElementById("saleCameraReader");
+    const status = document.getElementById("saleCameraStatus");
 
-    await startSelectedSaleCamera();
+    if (!reader) return;
 
+    try {
+        // Stop kamera lama
+        if (saleCameraScanner) {
+            try {
+                await saleCameraScanner.stop();
+            } catch (error) {
+                console.warn("Camera stop error:", error);
+            }
+
+            try {
+                saleCameraScanner.clear();
+            } catch (error) {
+                console.warn("Camera clear error:", error);
+            }
+
+            saleCameraScanner = null;
+        }
+
+        saleCameraProcessing = false;
+
+        // Bersihkan container
+        reader.innerHTML = "";
+
+        if (status) {
+            status.innerHTML =
+                `<span class="text-primary">
+                    <i class="bi bi-camera-rotate me-1"></i>
+                    Mengganti kamera...
+                </span>`;
+        }
+
+        // Buat instance baru
+        saleCameraScanner =
+            new Html5Qrcode("saleCameraReader");
+
+        await startSelectedSaleCamera();
+
+    } catch (error) {
+        console.error("Switch camera error:", error);
+
+        if (status) {
+            status.innerHTML =
+                `<span class="text-danger">
+                    <i class="bi bi-exclamation-circle me-1"></i>
+                    Gagal mengganti kamera.
+                </span>`;
+        }
+    }
 }
 
 async function stopSaleCameraScanner() {

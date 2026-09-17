@@ -213,3 +213,31 @@ body {
 .inventory-stock-normal {
     font-weight: 600;
 }
+
+
+.sale-qty-cell {
+    width: 75px;
+    min-width: 75px;
+    max-width: 75px;
+}
+
+.sale-qty-input {
+    width: 65px !important;
+    min-width: 65px !important;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+}
+
+@media (max-width: 576px) {
+    .sale-qty-cell {
+        width: 70px;
+        min-width: 70px;
+        max-width: 70px;
+    }
+
+    .sale-qty-input {
+        width: 60px !important;
+        min-width: 60px !important;
+        font-size: 14px;
+    }
+}
