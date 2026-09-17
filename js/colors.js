@@ -11,7 +11,7 @@ async function initColors() {
 
     await Promise.all([
         loadColors(),
-        loadColorItems()
+        loadColorItems(false)
     ]);
 
 }
@@ -932,10 +932,10 @@ function printColorLabels(id) {
                         .qr {
 
                             width:
-                                25mm;
+                                23mm;
 
                             height:
-                                25mm;
+                                23mm;
 
                             object-fit:
                                 contain;
@@ -993,13 +993,10 @@ function printColorLabels(id) {
                                 17mm;
 
                             max-height:
-                                6mm;
+                                5mm;
 
                             object-fit:
                                 contain;
-
-                            margin-bottom:
-                                0.8mm;
 
                         }
 
@@ -1013,7 +1010,7 @@ function printColorLabels(id) {
                         .item-name {
 
                             font-size:
-                                8px;
+                                10px;
 
                             font-weight:
                                 bold;
@@ -1096,23 +1093,23 @@ function printColorLabels(id) {
                     </div>
 
 
-                    <script>
+                    // <script>
 
-                        window.onload =
-                            function() {
+                    //     window.onload =
+                    //         function() {
 
-                                setTimeout(
-                                    function() {
+                    //             setTimeout(
+                    //                 function() {
 
-                                        window.print();
+                    //                     window.print();
 
-                                    },
-                                    500
-                                );
+                    //                 },
+                    //                 500
+                    //             );
 
-                            };
+                    //         };
 
-                    <\/script>
+                    // <\/script>
 
 
                 </body>

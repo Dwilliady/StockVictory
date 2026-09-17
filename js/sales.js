@@ -813,10 +813,24 @@ async function processSaleBarcode(
                 qtyInput.value || 0
             );
 
+        const stock = 
+            Number(inventory.stock || 0);
+
 
         qtyInput.value =
             currentQty + 1;
 
+        if (currentQty >= stock) {
+
+            alert(
+                `Qty ${inventory.items.code} - ${inventory.colors.color_no} tidak boleh lebih dari stock ${stock}.`
+            );
+
+            scannerInput.value = "";
+            scannerInput.focus();
+
+            return false;
+        }
 
         calculateSaleRow(
             rowId
@@ -1679,6 +1693,26 @@ function calculateSaleRow(
         Number(
             priceElement.dataset.value || 0
         );
+
+    const stockElement =
+        Number(
+            document.getElementById(
+                `saleStock_${rowId}`
+            ).dataset.value || 0
+        );
+
+    if (stockElement !== 0 && qty > stockElement) {  
+        alert(
+            'Qty melebihi dari Stock yang ada'
+        );
+
+
+        qty =
+            stockElement;
+
+        qtyInput.value =
+            stockElement;
+    }
 
 
     const subtotal =
