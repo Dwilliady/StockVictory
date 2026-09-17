@@ -5,12 +5,21 @@ let saleRowCounter = 0;
 
 let savedSaleId = null;
 
+let saleBarcodeScannerInitialized = false;
+
+let saleCameraScanner = null;
+
+let saleCameraProcessing = false;
+
+let saleCameraDevices = [];
+
+let saleCameraIndex = 0;
+
 /* =====================================================
    INIT
 ===================================================== */
 
 async function initSales() {
-
     try {
 
         await Promise.all([
@@ -20,15 +29,26 @@ async function initSales() {
         ]);
 
 
-        document.getElementById(
-            "saleDate"
-        ).value =
-            new Date()
-                .toISOString()
-                .split("T")[0];
+        document.getElementById("saleDate").value =
+            new Date().toISOString().split("T")[0];
 
 
         addSaleRow();
+
+
+        /*
+           Setup USB + Camera scanner
+           setelah halaman transaksi selesai dibuat.
+        */
+
+        setTimeout(
+            function () {
+
+                setupSaleBarcodeScanner();
+
+            },
+            100
+        );
 
 
     } catch (error) {
@@ -44,7 +64,6 @@ async function initSales() {
         );
 
     }
-
 }
 
 
@@ -187,6 +206,927 @@ async function loadSaleInventory() {
 
     saleInventoryData =
         data || [];
+
+}
+
+
+/* =====================================================
+   BARCODE SCANNER
+===================================================== */
+
+function setupSaleBarcodeScanner() {
+
+    /*
+       Kalau scanner UI sudah ada,
+       cukup pastikan input kembali fokus.
+    */
+
+    const existingScanner =
+        document.getElementById("saleBarcodeScan");
+
+    if (existingScanner) {
+
+        existingScanner.focus();
+
+        return;
+    }
+
+    const switchCameraButton =
+        document.getElementById(
+            "btnSwitchSaleCamera"
+        );
+
+
+    if (switchCameraButton) {
+
+        switchCameraButton.addEventListener(
+            "click",
+            async function () {
+
+                await switchSaleCamera();
+
+            }
+        );
+
+    }
+
+
+    /*
+       Cari tbody transaksi
+    */
+
+    const tbody =
+        document.getElementById("saleDetailBody");
+
+    if (!tbody) {
+
+        console.warn(
+            "saleDetailBody tidak ditemukan."
+        );
+
+        return;
+    }
+
+
+    /*
+       Cari table transaksi
+    */
+
+    const table =
+        tbody.closest("table");
+
+    if (!table) {
+
+        console.warn(
+            "Table transaksi tidak ditemukan."
+        );
+
+        return;
+    }
+
+
+    /*
+       Wrapper utama
+    */
+
+    const scannerWrapper =
+        document.createElement("div");
+
+    scannerWrapper.className =
+        "mb-3 px-3";
+
+
+    scannerWrapper.innerHTML = `
+
+        <!-- MODE SCANNER -->
+
+        <div class="d-flex justify-content-between align-items-center mb-2">
+
+            <label class="form-label mb-3 py-2 fw-semibold mb-0">
+
+                <i class="bi bi-upc-scan me-1"></i>
+                Scan Barang
+
+            </label>
+
+            <div
+                class="btn-group"
+                role="group"
+                aria-label="Mode scanner">
+
+                <input
+                    type="radio"
+                    class="btn-check"
+                    name="saleScanMode"
+                    id="saleScanModeUsb"
+                    value="usb"
+                    checked
+                    autocomplete="off">
+
+                <label
+                    class="btn btn-outline-primary"
+                    for="saleScanModeUsb">
+
+                    <i class="bi bi-usb-drive me-1"></i>
+                    Scanner USB
+
+                </label>
+
+
+                <input
+                    type="radio"
+                    class="btn-check"
+                    name="saleScanMode"
+                    id="saleScanModeCamera"
+                    value="camera"
+                    autocomplete="off">
+
+                <label
+                    class="btn btn-outline-primary"
+                    for="saleScanModeCamera">
+
+                    <i class="bi bi-camera me-1"></i>
+                    Kamera
+
+                </label>
+
+            </div>
+
+        </div>
+
+
+        <!-- USB -->
+
+        <div id="saleUsbScannerArea">
+
+            <div class="input-group input-group-sm mb-1">
+
+                <span class="input-group-text">
+
+                    <i class="bi bi-qr-code-scan"></i>
+
+                </span>
+
+
+                <input
+                    type="text"
+                    class="form-control"
+                    id="saleBarcodeScan"
+                    placeholder="Scan barcode / QR..."
+                    autocomplete="off"
+                    autocapitalize="off"
+                    autocorrect="off"
+                    spellcheck="false">
+
+
+                <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    id="btnClearSaleBarcode"
+                    title="Kosongkan">
+
+                    <i class="bi bi-x-lg"></i>
+
+                </button>
+
+            </div>
+
+
+            <small class="text-muted">
+
+                Gunakan scanner USB.
+                Contoh: <strong>PLY-001</strong>
+
+            </small>
+
+        </div>
+
+
+        <!-- CAMERA -->
+
+        <div
+            id="saleCameraScannerArea"
+            class="d-none">
+
+            <div
+                id="saleCameraReader"
+                 style="
+                        width: 280px;
+                        max-width: 100%;
+                        margin: 0 auto;
+                        border-radius: 10px;
+                        overflow: hidden;
+                    ">
+            </div>
+
+             <div class="text-center mt-2">
+
+                <button
+                    type="button"
+                    class="btn btn-outline-secondary btn-sm"
+                    id="btnSwitchSaleCamera">
+
+                    <i class="bi bi-camera-rotate me-1"></i>
+                    Ganti Kamera
+
+                </button>
+
+            </div>
+
+
+            <div
+                id="saleCameraStatus"
+                class="small text-muted mt-2">
+
+                Kamera belum aktif.
+
+            </div>
+
+        </div>
+
+    `;
+
+
+    /*
+       Masukkan sebelum table
+    */
+
+    table.parentNode.insertBefore(
+        scannerWrapper,
+        table
+    );
+
+
+    /*
+       Element
+    */
+
+    const scannerInput =
+        document.getElementById(
+            "saleBarcodeScan"
+        );
+
+    const usbArea =
+        document.getElementById(
+            "saleUsbScannerArea"
+        );
+
+    const cameraArea =
+        document.getElementById(
+            "saleCameraScannerArea"
+        );
+
+    const usbMode =
+        document.getElementById(
+            "saleScanModeUsb"
+        );
+
+    const cameraMode =
+        document.getElementById(
+            "saleScanModeCamera"
+        );
+
+    const clearButton =
+        document.getElementById(
+            "btnClearSaleBarcode"
+        );
+
+
+    /*
+       ==========================================
+       USB SCANNER
+       ==========================================
+    */
+
+    scannerInput.addEventListener(
+        "keydown",
+        async function (event) {
+
+            if (event.key !== "Enter") {
+
+                return;
+
+            }
+
+
+            event.preventDefault();
+
+
+            const barcode =
+                scannerInput.value
+                    .trim();
+
+
+            if (!barcode) {
+
+                return;
+
+            }
+
+
+            await processSaleBarcode(
+                barcode
+            );
+
+            playSaleScanBeep();
+        }
+    );
+
+
+    /*
+       Clear button
+    */
+
+    if (clearButton) {
+
+        clearButton.addEventListener(
+            "click",
+            function () {
+
+                scannerInput.value = "";
+
+                scannerInput.classList.remove(
+                    "is-valid",
+                    "is-invalid"
+                );
+
+                scannerInput.focus();
+
+            }
+        );
+
+    }
+
+
+    /*
+       ==========================================
+       MODE USB
+       ==========================================
+    */
+
+    usbMode.addEventListener(
+        "change",
+        function () {
+
+            if (!usbMode.checked) {
+
+                return;
+
+            }
+
+
+            stopSaleCameraScanner();
+
+
+            cameraArea.classList.add(
+                "d-none"
+            );
+
+            usbArea.classList.remove(
+                "d-none"
+            );
+
+
+            scannerInput.focus();
+
+        }
+    );
+
+
+    /*
+       ==========================================
+       MODE CAMERA
+       ==========================================
+    */
+
+    cameraMode.addEventListener(
+        "change",
+        async function () {
+
+            if (!cameraMode.checked) {
+
+                return;
+
+            }
+
+
+            usbArea.classList.add(
+                "d-none"
+            );
+
+            cameraArea.classList.remove(
+                "d-none"
+            );
+
+
+            await startSaleCameraScanner();
+
+        }
+    );
+
+
+    /*
+       Fokus awal USB
+    */
+
+    setTimeout(
+        function () {
+
+            const input =
+                document.getElementById(
+                    "saleBarcodeScan"
+                );
+
+            if (input) {
+
+                input.focus();
+
+            }
+
+        },
+        300
+    );
+
+}
+
+/* =====================================================
+   PROCESS BARCODE
+===================================================== */
+
+async function processSaleBarcode(
+    barcode
+) {
+
+    const scannerInput =
+        document.getElementById(
+            "saleBarcodeScan"
+        );
+
+
+    const cleanBarcode =
+        String(barcode || "")
+            .trim()
+            .toUpperCase();
+
+
+    if (!cleanBarcode) {
+        return;
+    }
+
+
+    console.log(
+        "SCAN BARCODE:",
+        cleanBarcode
+    );
+
+
+    /*
+       Cari inventory berdasarkan:
+       
+       ITEM CODE + "-" + COLOR NO
+
+       Contoh:
+       POLY-091
+    */
+
+    const inventory =
+        saleInventoryData.find(
+            function (row) {
+
+                if (
+                    !row.items ||
+                    !row.colors
+                ) {
+
+                    return false;
+
+                }
+
+
+                if (
+                    row.colors.status !== true
+                ) {
+
+                    return false;
+
+                }
+
+
+                const itemCode =
+                    String(
+                        row.items.code || ""
+                    )
+                        .trim()
+                        .toUpperCase();
+
+
+                const colorNo =
+                    String(
+                        row.colors.color_no || ""
+                    )
+                        .trim()
+                        .toUpperCase();
+
+
+                const rowBarcode =
+                    `${itemCode}-${colorNo}`;
+
+
+                return (
+                    rowBarcode ===
+                    cleanBarcode
+                );
+
+            }
+        );
+
+
+    /*
+       Barcode tidak ditemukan
+    */
+
+    if (!inventory) {
+
+        alert(
+            `Barcode "${cleanBarcode}" tidak ditemukan.`
+        );
+
+
+        scannerInput.value = "";
+
+
+        scannerInput.focus();
+
+
+        return;
+
+    }
+
+
+    const itemId =
+        Number(
+            inventory.item_id
+        );
+
+
+    const colorId =
+        Number(
+            inventory.color_id
+        );
+
+
+    /*
+       Cari apakah Item + Warna
+       sudah ada di grid
+    */
+
+    const existingRow =
+        findSaleRow(
+            itemId,
+            colorId
+        );
+
+
+    /*
+       Kalau sudah ada:
+       Qty + 1
+    */
+
+    if (existingRow) {
+
+        const rowId =
+            existingRow.id.replace(
+                "saleRow_",
+                ""
+            );
+
+
+        const qtyInput =
+            document.getElementById(
+                `saleQty_${rowId}`
+            );
+
+
+        const currentQty =
+            Number(
+                qtyInput.value || 0
+            );
+
+
+        qtyInput.value =
+            currentQty + 1;
+
+
+        calculateSaleRow(
+            rowId
+        );
+
+
+        showSaleBarcodeFeedback(
+            `Qty ${inventory.items.code} - ${inventory.colors.color_no} menjadi ${currentQty + 1}`
+        );
+
+
+        scannerInput.value = "";
+
+
+        scannerInput.focus();
+
+
+        return;
+
+    }
+
+
+    /*
+       Cari row kosong yang pertama.
+       
+       Karena initSales() membuat
+       satu row kosong.
+    */
+
+    let rowId =
+        findEmptySaleRow();
+
+
+    /*
+       Kalau tidak ada row kosong,
+       buat row baru.
+    */
+
+    if (!rowId) {
+
+        addSaleRow();
+
+        rowId =
+            saleRowCounter;
+
+    }
+
+
+    /*
+       Pilih ITEM
+    */
+
+    const itemSelect =
+        document.getElementById(
+            `saleItem_${rowId}`
+        );
+
+
+    itemSelect.value =
+        String(itemId);
+
+
+    /*
+       Jalankan change item supaya:
+       - warna di-load
+       - harga di-load
+    */
+
+    await changeSaleItem(
+        rowId
+    );
+
+
+    /*
+       Setelah warna tersedia,
+       pilih warna
+    */
+
+    const colorSelect =
+        document.getElementById(
+            `saleColor_${rowId}`
+        );
+
+
+    colorSelect.value =
+        String(colorId);
+
+
+    /*
+       Jalankan change color supaya:
+       - stock muncul
+       - subtotal dihitung
+    */
+
+    changeSaleColor(
+        rowId
+    );
+
+
+    /*
+       Qty pertama = 1
+    */
+
+    const qtyInput =
+        document.getElementById(
+            `saleQty_${rowId}`
+        );
+
+
+    qtyInput.value =
+        1;
+
+
+    calculateSaleRow(
+        rowId
+    );
+
+
+    showSaleBarcodeFeedback(
+        `${inventory.items.code} - ${inventory.colors.color_no} ${inventory.colors.color_name} ditambahkan`
+    );
+
+
+    /*
+       Bersihkan input scanner
+    */
+
+    scannerInput.value =
+        "";
+
+
+    scannerInput.focus();
+
+}
+
+
+/* =====================================================
+   FIND SALE ROW
+===================================================== */
+
+function findSaleRow(
+    itemId,
+    colorId
+) {
+
+    const rows =
+        document.querySelectorAll(
+            "#saleDetailBody tr"
+        );
+
+
+    for (
+        const row of rows
+    ) {
+
+        const rowId =
+            row.id.replace(
+                "saleRow_",
+                ""
+            );
+
+
+        const rowItemElement =
+            document.getElementById(
+                `saleItem_${rowId}`
+            );
+
+
+        const rowColorElement =
+            document.getElementById(
+                `saleColor_${rowId}`
+            );
+
+
+        if (
+            !rowItemElement ||
+            !rowColorElement
+        ) {
+
+            continue;
+
+        }
+
+
+        const rowItemId =
+            Number(
+                rowItemElement.value || 0
+            );
+
+
+        const rowColorId =
+            Number(
+                rowColorElement.value || 0
+            );
+
+
+        if (
+            rowItemId === Number(itemId) &&
+            rowColorId === Number(colorId)
+        ) {
+
+            return row;
+
+        }
+
+    }
+
+
+    return null;
+
+}
+
+
+/* =====================================================
+   FIND EMPTY SALE ROW
+===================================================== */
+
+function findEmptySaleRow() {
+
+    const rows =
+        document.querySelectorAll(
+            "#saleDetailBody tr"
+        );
+
+
+    for (
+        const row of rows
+    ) {
+
+        const rowId =
+            row.id.replace(
+                "saleRow_",
+                ""
+            );
+
+
+        const itemSelect =
+            document.getElementById(
+                `saleItem_${rowId}`
+            );
+
+
+        const colorSelect =
+            document.getElementById(
+                `saleColor_${rowId}`
+            );
+
+
+        if (
+            itemSelect &&
+            colorSelect &&
+            !itemSelect.value &&
+            !colorSelect.value
+        ) {
+
+            return rowId;
+
+        }
+
+    }
+
+
+    return null;
+
+}
+
+
+/* =====================================================
+   BARCODE FEEDBACK
+===================================================== */
+
+function showSaleBarcodeFeedback(
+    message
+) {
+
+    const scannerInput =
+        document.getElementById(
+            "saleBarcodeScan"
+        );
+
+
+    if (!scannerInput) {
+        return;
+    }
+
+
+    scannerInput.classList.remove(
+        "is-invalid"
+    );
+
+
+    scannerInput.classList.add(
+        "is-valid"
+    );
+
+
+    setTimeout(
+        function () {
+
+            scannerInput.classList.remove(
+                "is-valid"
+            );
+
+        },
+        800
+    );
+
+    console.log(
+        "BARCODE:",
+        message
+    );
 
 }
 
@@ -360,8 +1300,12 @@ function addSaleRow() {
 ===================================================== */
 
 async function changeSaleItem(rowId) {
-    
-    console.log("CHANGE ITEM START", rowId);
+
+    console.log(
+        "CHANGE ITEM START",
+        rowId
+    );
+
 
     const itemId =
         document.getElementById(
@@ -404,6 +1348,10 @@ async function changeSaleItem(rowId) {
         "-";
 
 
+    priceElement.dataset.value =
+        0;
+
+
     document.getElementById(
         `saleSubtotal_${rowId}`
     ).textContent =
@@ -412,7 +1360,8 @@ async function changeSaleItem(rowId) {
 
     document.getElementById(
         `saleSubtotal_${rowId}`
-    ).dataset.value = 0;
+    ).dataset.value =
+        0;
 
 
     if (!itemId) {
@@ -473,7 +1422,11 @@ async function changeSaleItem(rowId) {
             "saleDate"
         ).value;
 
-    console.log("GET PRICE DONE", rowId);
+
+    console.log(
+        "GET PRICE DONE",
+        rowId
+    );
 
 
     if (!saleDate) {
@@ -541,6 +1494,7 @@ async function changeSaleItem(rowId) {
 
 }
 
+
 /* =====================================================
    CHANGE COLOR
 ===================================================== */
@@ -601,13 +1555,17 @@ function changeSaleColor(rowId) {
         formatStock(stock);
 
 
-    calculateSaleRow(rowId);
+    calculateSaleRow(
+        rowId
+    );
 
 }
+
 
 /* =====================================================
    Reload PRICE
 ===================================================== */
+
 async function reloadSalePrices() {
 
     const rows =
@@ -615,7 +1573,9 @@ async function reloadSalePrices() {
             '[id^="saleRow_"]'
         );
 
+
     const promises = [];
+
 
     for (const row of rows) {
 
@@ -625,41 +1585,69 @@ async function reloadSalePrices() {
                 ""
             );
 
+
         const itemId =
             document.getElementById(
                 `saleItem_${rowId}`
             ).value;
 
+
         if (itemId) {
 
             promises.push(
-                changeSaleItem(rowId)
+                changeSaleItem(
+                    rowId
+                )
             );
 
         }
+
     }
 
-    await Promise.all(promises);
+
+    await Promise.all(
+        promises
+    );
+
 }
+
 
 /* =====================================================
    Validasi untuk Jenis Item yang sama dengan Warna yang sama gaboleh pisah rows
 ===================================================== */
 
-function validateSaleDuplicateItems(details) {
-    const used = new Set();
+function validateSaleDuplicateItems(
+    details
+) {
 
-    for (const detail of details) {
-        const key = `${detail.item_id}_${detail.color_id}`;
+    const used =
+        new Set();
 
-        if (used.has(key)) {
+
+    for (
+        const detail of details
+    ) {
+
+        const key =
+            `${detail.item_id}_${detail.color_id}`;
+
+
+        if (
+            used.has(key)
+        ) {
+
             return false;
+
         }
 
+
         used.add(key);
+
     }
 
+
     return true;
+
 }
 
 
@@ -667,7 +1655,9 @@ function validateSaleDuplicateItems(details) {
    CALCULATE ROW
 ===================================================== */
 
-function calculateSaleRow(rowId) {
+function calculateSaleRow(
+    rowId
+) {
 
     const qty =
         Number(
@@ -718,7 +1708,9 @@ function calculateSaleRow(rowId) {
    REMOVE ROW
 ===================================================== */
 
-function removeSaleRow(rowId) {
+function removeSaleRow(
+    rowId
+) {
 
     const row =
         document.getElementById(
@@ -770,7 +1762,9 @@ function calculateSaleTotal() {
     document.getElementById(
         "saleTotal"
     ).textContent =
-        formatCurrency(total);
+        formatCurrency(
+            total
+        );
 
 }
 
@@ -797,11 +1791,15 @@ function resetSaleForm() {
 
 }
 
+
 /* =====================================================
    HARGA ITEM
 ===================================================== */
 
-async function getSalePrice(itemId, saleDate) {
+async function getSalePrice(
+    itemId,
+    saleDate
+) {
 
     const {
         data,
@@ -835,11 +1833,14 @@ async function getSalePrice(itemId, saleDate) {
 
 
     if (error) {
+
         throw error;
+
     }
 
 
     return data;
+
 }
 
 
@@ -848,87 +1849,204 @@ async function getSalePrice(itemId, saleDate) {
 ===================================================== */
 
 async function saveSale() {
+
     try {
-        const customerId = document.getElementById("saleCustomer").value;
-        const saleDate = document.getElementById("saleDate").value;
-        const rows = document.querySelectorAll("#saleDetailBody tr");
+
+        const customerId =
+            document.getElementById(
+                "saleCustomer"
+            ).value;
+
+
+        const saleDate =
+            document.getElementById(
+                "saleDate"
+            ).value;
+
+
+        const rows =
+            document.querySelectorAll(
+                "#saleDetailBody tr"
+            );
+
 
         if (!customerId) {
-            alert("Customer harus dipilih.");
+
+            alert(
+                "Customer harus dipilih."
+            );
+
             return;
+
         }
+
 
         if (!saleDate) {
-            alert("Tanggal transaksi harus diisi.");
+
+            alert(
+                "Tanggal transaksi harus diisi."
+            );
+
             return;
+
         }
 
+
         if (rows.length === 0) {
-            alert("Detail transaksi belum diisi.");
+
+            alert(
+                "Detail transaksi belum diisi."
+            );
+
             return;
+
         }
+
 
         const details = [];
 
-        for (const row of rows) {
-            const rowId = row.id.replace("saleRow_", "");
 
-            const itemId = document.getElementById(`saleItem_${rowId}`).value;
-            const colorId = document.getElementById(`saleColor_${rowId}`).value;
-            const qty = Number(
-                document.getElementById(`saleQty_${rowId}`).value || 0
-            );
+        for (
+            const row of rows
+        ) {
+
+            const rowId =
+                row.id.replace(
+                    "saleRow_",
+                    ""
+                );
+
+
+            const itemId =
+                document.getElementById(
+                    `saleItem_${rowId}`
+                ).value;
+
+
+            const colorId =
+                document.getElementById(
+                    `saleColor_${rowId}`
+                ).value;
+
+
+            const qty =
+                Number(
+                    document.getElementById(
+                        `saleQty_${rowId}`
+                    ).value || 0
+                );
+
 
             if (!itemId) {
-                alert("Item harus dipilih pada semua baris.");
+
+                alert(
+                    "Item harus dipilih pada semua baris."
+                );
+
                 return;
+
             }
+
 
             if (!colorId) {
-                alert("Warna harus dipilih pada semua baris.");
+
+                alert(
+                    "Warna harus dipilih pada semua baris."
+                );
+
                 return;
+
             }
+
 
             if (qty <= 0) {
-                alert("Quantity harus lebih dari 0.");
+
+                alert(
+                    "Quantity harus lebih dari 0."
+                );
+
                 return;
+
             }
+
 
             details.push({
-                item_id: Number(itemId),
-                color_id: Number(colorId),
-                qty: qty
+
+                item_id:
+                    Number(itemId),
+
+                color_id:
+                    Number(colorId),
+
+                qty:
+                    qty
+
             });
+
         }
+
 
         // Cek duplicate Item + Warna
-        if (!validateSaleDuplicateItems(details)) {
-            alert("Item dan warna yang sama tidak boleh dimasukkan lebih dari satu kali.");
+
+        if (
+            !validateSaleDuplicateItems(
+                details
+            )
+        ) {
+
+            alert(
+                "Item dan warna yang sama tidak boleh dimasukkan lebih dari satu kali."
+            );
+
             return;
+
         }
 
-        const saveButton = document.getElementById("btnSaveSale");
+
+        const saveButton =
+            document.getElementById(
+                "btnSaveSale"
+            );
+
 
         if (saveButton) {
-            saveButton.disabled = true;
+
+            saveButton.disabled =
+                true;
+
+
             saveButton.innerHTML =
                 '<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...';
+
         }
 
-        const result = await supabaseClient.rpc(
-            "create_sale",
-            {
-                p_customer_id: customerId,
-                p_sale_date: saleDate,
-                p_details: details
-            }
-        );
+
+        const result =
+            await supabaseClient.rpc(
+                "create_sale",
+                {
+                    p_customer_id:
+                        customerId,
+
+                    p_sale_date:
+                        saleDate,
+
+                    p_details:
+                        details
+                }
+            );
+
 
         if (result.error) {
+
             throw result.error;
+
         }
 
-        const saleData = result.data;
+
+        const saleData =
+            result.data;
+
 
         showSaleSuccessModal(
             saleData
@@ -936,23 +2054,44 @@ async function saveSale() {
 
 
     } catch (error) {
-        console.error("saveSale error:", error);
+
+        console.error(
+            "saveSale error:",
+            error
+        );
+
 
         alert(
             error.message ||
             "Terjadi kesalahan saat menyimpan transaksi."
         );
 
-        const saveButton = document.getElementById("btnSaveSale");
+
+        const saveButton =
+            document.getElementById(
+                "btnSaveSale"
+            );
+
 
         if (saveButton) {
-            saveButton.disabled = false;
-            saveButton.innerHTML = "Simpan Transaksi";
+
+            saveButton.disabled =
+                false;
+
+
+            saveButton.innerHTML =
+                "Simpan Transaksi";
+
         }
+
     }
+
 }
 
-function showSaleSuccessModal(saleData) {
+
+function showSaleSuccessModal(
+    saleData
+) {
 
     savedSaleId =
         saleData.sale_id;
@@ -988,6 +2127,7 @@ function showSaleSuccessModal(saleData) {
 
 }
 
+
 function printSavedSale() {
 
     if (!savedSaleId) {
@@ -1008,6 +2148,7 @@ function printSavedSale() {
 
 }
 
+
 function finishSavedSale() {
 
     window.location.href =
@@ -1020,9 +2161,13 @@ function finishSavedSale() {
    FORMAT STOCK
 ===================================================== */
 
-function formatStock(value) {
+function formatStock(
+    value
+) {
 
-    return Number(value || 0)
+    return Number(
+        value || 0
+    )
         .toLocaleString(
             "id-ID",
             {
@@ -1038,9 +2183,13 @@ function formatStock(value) {
    FORMAT CURRENCY
 ===================================================== */
 
-function formatCurrency(value) {
+function formatCurrency(
+    value
+) {
 
-    return Number(value || 0)
+    return Number(
+        value || 0
+    )
         .toLocaleString(
             "id-ID",
             {
@@ -1057,13 +2206,499 @@ function formatCurrency(value) {
    ESCAPE HTML
 ===================================================== */
 
-function escapeHtml(value) {
+function escapeHtml(
+    value
+) {
 
-    return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+    return String(
+        value ?? ""
+    )
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
+}
+
+async function startSaleCameraScanner() {
+
+    const reader =
+        document.getElementById(
+            "saleCameraReader"
+        );
+
+    const status =
+        document.getElementById(
+            "saleCameraStatus"
+        );
+
+
+    if (!reader) {
+
+        return;
+
+    }
+
+
+    if (
+        typeof Html5Qrcode ===
+        "undefined"
+    ) {
+
+        if (status) {
+
+            status.innerHTML =
+                `<span class="text-danger">
+                    Library kamera belum tersedia.
+                 </span>`;
+
+        }
+
+        return;
+
+    }
+
+
+    try {
+
+        /*
+           Ambil semua kamera
+        */
+
+        saleCameraDevices =
+            await Html5Qrcode.getCameras();
+
+
+        if (
+            !saleCameraDevices ||
+            saleCameraDevices.length === 0
+        ) {
+
+            throw new Error(
+                "Tidak ada kamera ditemukan."
+            );
+
+        }
+
+
+        /*
+           Coba cari kamera belakang
+        */
+
+        const backCameraIndex =
+            saleCameraDevices.findIndex(
+                camera =>
+                    /back|rear|environment/i.test(
+                        camera.label
+                    )
+            );
+
+
+        if (backCameraIndex >= 0) {
+
+            saleCameraIndex =
+                backCameraIndex;
+
+        } else {
+
+            saleCameraIndex = 0;
+
+        }
+
+
+        /*
+           Buat scanner
+        */
+
+        saleCameraScanner =
+            new Html5Qrcode(
+                "saleCameraReader"
+            );
+
+
+        await startSelectedSaleCamera();
+
+
+    } catch (error) {
+
+        console.error(
+            "Camera error:",
+            error
+        );
+
+
+        if (status) {
+
+            status.innerHTML =
+                `<span class="text-danger">
+                    <i class="bi bi-exclamation-circle me-1"></i>
+                    Kamera gagal dibuka.
+                    Pastikan izin kamera diberikan.
+                 </span>`;
+
+        }
+
+
+        saleCameraScanner = null;
+
+    }
+
+}
+
+async function startSelectedSaleCamera() {
+
+    const status =
+        document.getElementById(
+            "saleCameraStatus"
+        );
+
+
+    if (!saleCameraScanner) {
+
+        return;
+
+    }
+
+
+    if (
+        !saleCameraDevices ||
+        saleCameraDevices.length === 0
+    ) {
+
+        return;
+
+    }
+
+
+    const camera =
+        saleCameraDevices[
+            saleCameraIndex
+        ];
+
+
+    if (!camera) {
+
+        return;
+
+    }
+
+
+    /*
+       Kalau scanner sedang jalan,
+       stop dulu.
+    */
+
+    try {
+
+        await saleCameraScanner.stop();
+
+    } catch (error) {
+
+        /*
+           Abaikan kalau memang belum aktif
+        */
+
+    }
+
+
+    saleCameraProcessing = false;
+
+
+    if (status) {
+
+        status.innerHTML =
+            `<span class="text-primary">
+                <i class="bi bi-camera me-1"></i>
+                Mengaktifkan kamera...
+             </span>`;
+
+    }
+
+
+    try {
+
+        await saleCameraScanner.start(
+
+            camera.id,
+
+            {
+
+                fps: 10,
+
+                qrbox: {
+                    width: 200,
+                    height: 200
+                },
+
+                aspectRatio: 1.0
+
+            },
+
+
+            async function (decodedText) {
+
+                if (saleCameraProcessing) {
+
+                    return;
+
+                }
+
+
+                saleCameraProcessing = true;
+
+
+                try {
+
+                    const success =
+                        await processSaleBarcode(decodedText);
+
+                    if (success) {
+                        playSaleScanBeep();
+                    }
+
+
+                    if (status) {
+
+                        status.innerHTML =
+                            `<span class="text-success">
+                                <i class="bi bi-check-circle me-1"></i>
+                                ${escapeHtml(decodedText)}
+                             </span>`;
+
+                    }
+
+                } finally {
+
+                    setTimeout(
+                        function () {
+
+                            saleCameraProcessing =
+                                false;
+
+                        },
+                        700
+                    );
+
+                }
+
+            },
+
+
+            function () {
+
+                /*
+                   Scan gagal / belum menemukan QR.
+                   Tidak perlu menampilkan error.
+                */
+
+            }
+
+        );
+
+
+        if (status) {
+
+            status.innerHTML =
+                `<span class="text-success">
+                    <i class="bi bi-camera-fill me-1"></i>
+                    ${escapeHtml(camera.label || "Kamera aktif")}
+                 </span>`;
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Start selected camera error:",
+            error
+        );
+
+
+        if (status) {
+
+            status.innerHTML =
+                `<span class="text-danger">
+                    Gagal membuka kamera.
+                 </span>`;
+
+        }
+
+    }
+
+}
+
+async function switchSaleCamera() {
+
+    if (
+        !saleCameraDevices ||
+        saleCameraDevices.length < 2
+    ) {
+
+        alert(
+            "Perangkat hanya memiliki satu kamera."
+        );
+
+        return;
+
+    }
+
+
+    saleCameraIndex++;
+
+    if (
+        saleCameraIndex >=
+        saleCameraDevices.length
+    ) {
+
+        saleCameraIndex = 0;
+
+    }
+
+
+    await startSelectedSaleCamera();
+
+}
+
+async function stopSaleCameraScanner() {
+
+    if (!saleCameraScanner) {
+
+        return;
+
+    }
+
+
+    try {
+
+        await saleCameraScanner.stop();
+
+    } catch (error) {
+
+        console.warn(
+            "Camera stop error:",
+            error
+        );
+
+    }
+
+
+    try {
+
+        saleCameraScanner.clear();
+
+    } catch (error) {
+
+        console.warn(
+            "Camera clear error:",
+            error
+        );
+
+    }
+
+
+    saleCameraScanner = null;
+
+    saleCameraProcessing = false;
+
+
+    const status =
+        document.getElementById(
+            "saleCameraStatus"
+        );
+
+
+    if (status) {
+
+        status.innerHTML =
+            "Kamera belum aktif.";
+
+    }
+
+}
+
+function playSaleScanBeep() {
+
+    try {
+
+        const AudioContext =
+            window.AudioContext ||
+            window.webkitAudioContext;
+
+        if (!AudioContext) {
+
+            return;
+
+        }
+
+
+        const audioContext =
+            new AudioContext();
+
+
+        const oscillator =
+            audioContext.createOscillator();
+
+
+        const gainNode =
+            audioContext.createGain();
+
+
+        oscillator.type = "sine";
+
+        oscillator.frequency.value =
+            1000;
+
+
+        gainNode.gain.setValueAtTime(
+            0.15,
+            audioContext.currentTime
+        );
+
+        gainNode.gain.exponentialRampToValueAtTime(
+            0.001,
+            audioContext.currentTime + 0.12
+        );
+
+
+        oscillator.connect(
+            gainNode
+        );
+
+        gainNode.connect(
+            audioContext.destination
+        );
+
+
+        oscillator.start();
+
+        oscillator.stop(
+            audioContext.currentTime + 0.12
+        );
+
+
+    } catch (error) {
+
+        console.warn(
+            "Scan beep error:",
+            error
+        );
+
+    }
 
 }

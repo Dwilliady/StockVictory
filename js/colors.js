@@ -41,9 +41,10 @@ async function loadColors() {
                     status
                 )
             `)
-            .eq("items.status",true)
+            .eq("items.status", true)
             .order("item_id")
             .order("color_no");
+
 
     if (error) {
 
@@ -52,14 +53,18 @@ async function loadColors() {
             error
         );
 
-        alert("Gagal mengambil data warna.");
+        alert(
+            "Gagal mengambil data warna."
+        );
 
         return;
     }
 
+
     colorData = data || [];
 
     renderColors(colorData);
+
 }
 
 
@@ -102,7 +107,9 @@ async function loadColorItems(
             error
         );
 
-        alert("Gagal mengambil data Item.");
+        alert(
+            "Gagal mengambil data Item."
+        );
 
         return false;
     }
@@ -223,6 +230,7 @@ function renderColors(data) {
                 document.createElement(
                     "div"
                 );
+
 
             card.className =
                 "col-12 col-xl-6";
@@ -455,6 +463,25 @@ function renderColorRows(
 
                         <td class="text-center">
 
+
+                            <!-- PRINT 12 LABEL -->
+
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-dark me-1"
+                                onclick="printColorLabels(
+                                    ${color.id}
+                                )"
+                                title="Print 12 Label"
+                            >
+
+                                <i class="bi bi-printer"></i>
+
+                            </button>
+
+
+                            <!-- EDIT -->
+
                             <button
                                 type="button"
                                 class="btn btn-sm btn-outline-primary me-1"
@@ -479,6 +506,628 @@ function renderColorRows(
 
             }
         ).join("");
+
+}
+
+
+// =====================================================
+// PRINT 12 COLOR LABEL
+// TJ LABEL 103
+// =====================================================
+
+function printColorLabels(id) {
+
+    const color =
+        colorData.find(
+            function (item) {
+
+                return Number(item.id) ===
+                    Number(id);
+
+            }
+        );
+
+
+    if (!color) {
+
+        alert(
+            "Data warna tidak ditemukan."
+        );
+
+        return;
+    }
+
+
+    const item =
+        color.items;
+
+
+    if (!item) {
+
+        alert(
+            "Data Item tidak ditemukan."
+        );
+
+        return;
+    }
+
+
+    // =============================================
+    // DATA
+    // =============================================
+
+    const itemName =
+        item.name || "";
+
+
+    const itemCode =
+        item.code || "";
+
+
+    const colorNo =
+        color.color_no || "";
+
+
+    const colorName =
+        color.color_name || "";
+
+
+    // =============================================
+    // VALUE QR
+    // =============================================
+
+    const qrValue =
+        `${itemCode}-${colorNo}`;
+
+
+    // =============================================
+    // TEMPORARY QR CONTAINER
+    // =============================================
+
+    const qrContainer =
+        document.createElement(
+            "div"
+        );
+
+
+    qrContainer.style.position =
+        "absolute";
+
+
+    qrContainer.style.left =
+        "-99999px";
+
+
+    qrContainer.style.top =
+        "-99999px";
+
+
+    document.body.appendChild(
+        qrContainer
+    );
+
+
+    // =============================================
+    // GENERATE QR
+    // =============================================
+
+    new QRCode(
+        qrContainer,
+        {
+
+            text:
+                qrValue,
+
+            width:
+                300,
+
+            height:
+                300,
+
+            correctLevel:
+                QRCode.CorrectLevel.H
+
+        }
+    );
+
+
+    // =============================================
+    // WAIT QR
+    // =============================================
+
+    setTimeout(
+        function () {
+
+            const canvas =
+                qrContainer.querySelector(
+                    "canvas"
+                );
+
+
+            if (!canvas) {
+
+                alert(
+                    "Gagal membuat QR Code."
+                );
+
+
+                qrContainer.remove();
+
+                return;
+            }
+
+
+            const qrImage =
+                canvas.toDataURL(
+                    "image/png"
+                );
+
+
+            qrContainer.remove();
+
+
+            // =========================================
+            // OPEN PRINT WINDOW
+            // =========================================
+
+            const printWindow =
+                window.open(
+                    "",
+                    "_blank"
+                );
+
+
+            if (!printWindow) {
+
+                alert(
+                    "Popup diblokir browser. Silakan izinkan popup untuk website ini."
+                );
+
+                return;
+            }
+
+
+            // =========================================
+            // GENERATE 12 LABEL
+            // =========================================
+
+            let labels = "";
+
+
+            for (
+                let i = 0;
+                i < 12;
+                i++
+            ) {
+
+                labels += `
+
+                    <div class="label">
+
+                        <!-- QR KIRI -->
+
+                        <div class="qr-area">
+
+                            <img
+                                src="${qrImage}"
+                                class="qr"
+                            >
+
+                        </div>
+
+
+                        <!-- INFORMASI KANAN -->
+
+                        <div class="info">
+
+                            <img
+                                src="images/logo.png"
+                                class="logo"
+                                onerror="
+                                    this.style.display='none';
+                                "
+                            >
+
+
+                            <div class="item-name">
+
+                                ${escapeHtml(
+                                    itemName
+                                )}
+
+                            </div>
+
+
+                            <div class="color-no">
+
+                                ${escapeHtml(
+                                    colorNo
+                                )}
+
+                            </div>
+
+
+                            <div class="color-name">
+
+                                ${escapeHtml(
+                                    colorName
+                                )}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                `;
+
+            }
+
+
+            // =========================================
+            // PRINT DOCUMENT
+            // =========================================
+
+            printWindow.document.write(`
+
+                <!DOCTYPE html>
+
+                <html lang="id">
+
+                <head>
+
+                    <meta charset="UTF-8">
+
+                    <title>
+                        Label ${escapeHtml(
+                            colorNo
+                        )}
+                    </title>
+
+
+                    <style>
+
+                        @page {
+
+                            size: A4 portrait;
+
+                            margin: 0;
+
+                        }
+
+
+                        * {
+
+                            box-sizing: border-box;
+
+                        }
+
+
+                        html,
+                        body {
+
+                            margin: 0;
+
+                            padding: 0;
+
+                            width: 210mm;
+
+                            height: 297mm;
+
+                        }
+
+
+                        body {
+
+                            font-family:
+                                Arial,
+                                Helvetica,
+                                sans-serif;
+
+                        }
+
+
+                        /* ================================= */
+
+                        /* SHEET A4                         */
+
+                        /* ================================= */
+
+                        .sheet {
+
+                            width: 210mm;
+
+                            height: 297mm;
+
+                            display: grid;
+
+                            grid-template-columns:
+                                64mm 64mm 64mm;
+
+                            grid-template-rows:
+                                32mm 32mm 32mm 32mm;
+
+                            column-gap:
+                                2mm;
+
+                            row-gap:
+                                2mm;
+
+                            /*
+                             * Posisi awal TJ Label 103.
+                             * Nanti bisa dikalibrasi
+                             * berdasarkan hasil printer.
+                             */
+
+                            padding-top:
+                                25mm;
+
+                            padding-left:
+                                8mm;
+
+                        }
+
+
+                        /* ================================= */
+
+                        /* LABEL                            */
+
+                        /* ================================= */
+
+                        .label {
+
+                            width:
+                                64mm;
+
+                            height:
+                                32mm;
+
+                            display:
+                                flex;
+
+                            flex-direction:
+                                row;
+
+                            align-items:
+                                center;
+
+                            overflow:
+                                hidden;
+
+                            padding:
+                                2mm;
+
+                        }
+
+
+                        /* ================================= */
+
+                        /* QR KIRI                          */
+
+                        /* ================================= */
+
+                        .qr-area {
+
+                            width:
+                                27mm;
+
+                            height:
+                                27mm;
+
+                            flex-shrink:
+                                0;
+
+                            display:
+                                flex;
+
+                            justify-content:
+                                center;
+
+                            align-items:
+                                center;
+
+                        }
+
+
+                        .qr {
+
+                            width:
+                                25mm;
+
+                            height:
+                                25mm;
+
+                            object-fit:
+                                contain;
+
+                        }
+
+
+                        /* ================================= */
+
+                        /* BAGIAN KANAN                     */
+
+                        /* ================================= */
+
+                        .info {
+
+                            height:
+                                27mm;
+
+                            flex:
+                                1;
+
+                            min-width:
+                                0;
+
+                            display:
+                                flex;
+
+                            flex-direction:
+                                column;
+
+                            align-items:
+                                center;
+
+                            justify-content:
+                                center;
+
+                            text-align:
+                                center;
+
+                            padding-left:
+                                1mm;
+
+                        }
+
+
+                        /* ================================= */
+
+                        /* LOGO                             */
+
+                        /* ================================= */
+
+                        .logo {
+
+                            width:
+                                17mm;
+
+                            max-height:
+                                6mm;
+
+                            object-fit:
+                                contain;
+
+                            margin-bottom:
+                                0.8mm;
+
+                        }
+
+
+                        /* ================================= */
+
+                        /* ITEM NAME                        */
+
+                        /* ================================= */
+
+                        .item-name {
+
+                            font-size:
+                                8px;
+
+                            font-weight:
+                                bold;
+
+                            line-height:
+                                1.05;
+
+                            white-space:
+                                pre-line;
+
+                            word-break:
+                                break-word;
+
+                        }
+
+
+                        /* ================================= */
+
+                        /* COLOR NO                         */
+
+                        /* ================================= */
+
+                        .color-no {
+
+                            font-size:
+                                12px;
+
+                            font-weight:
+                                bold;
+
+                            line-height:
+                                1.1;
+
+                            margin-top:
+                                1mm;
+
+                        }
+
+
+                        /* ================================= */
+
+                        /* COLOR NAME                       */
+
+                        /* ================================= */
+
+                        .color-name {
+
+                            font-size:
+                                8px;
+
+                            line-height:
+                                1.05;
+
+                            max-width:
+                                30mm;
+
+                            overflow:
+                                hidden;
+
+                            text-overflow:
+                                ellipsis;
+
+                            white-space:
+                                nowrap;
+
+                        }
+
+                    </style>
+
+                </head>
+
+
+                <body>
+
+
+                    <div class="sheet">
+
+                        ${labels}
+
+                    </div>
+
+
+                    <script>
+
+                        window.onload =
+                            function() {
+
+                                setTimeout(
+                                    function() {
+
+                                        window.print();
+
+                                    },
+                                    500
+                                );
+
+                            };
+
+                    <\/script>
+
+
+                </body>
+
+                </html>
+
+            `);
+
+
+            printWindow.document.close();
+
+        },
+
+        300
+    );
 
 }
 
@@ -520,12 +1169,14 @@ function openColorModal() {
         );
 
 
-    if (!colorId ||
+    if (
+        !colorId ||
         !colorItem ||
         !colorNo ||
         !colorName ||
         !colorStatus ||
-        !modalTitle) {
+        !modalTitle
+    ) {
 
         console.error(
             "Element modal warna tidak ditemukan."
@@ -632,12 +1283,14 @@ function editColor(id) {
         );
 
 
-    if (!colorId ||
+    if (
+        !colorId ||
         !colorItem ||
         !colorNo ||
         !colorName ||
         !colorStatus ||
-        !modalTitle) {
+        !modalTitle
+    ) {
 
         console.error(
             "Element modal warna tidak ditemukan."
@@ -1090,22 +1743,27 @@ function escapeHtml(value) {
 
 
     return String(value)
+
         .replace(
             /&/g,
             "&amp;"
         )
+
         .replace(
             /</g,
             "&lt;"
         )
+
         .replace(
             />/g,
             "&gt;"
         )
+
         .replace(
             /"/g,
             "&quot;"
         )
+
         .replace(
             /'/g,
             "&#039;"

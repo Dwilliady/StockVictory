@@ -181,3 +181,125 @@
     </div>
 
 </div>
+
+<!-- ===================================================== -->
+<!-- QR CODE MODAL -->
+<!-- ===================================================== -->
+
+<div
+    class="modal fade"
+    id="colorQRModal"
+    tabindex="-1"
+    aria-hidden="true"
+>
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content">
+
+
+            <div class="modal-header">
+
+                <h5 class="modal-title">
+
+                    <i class="bi bi-qr-code me-2"></i>
+
+                    QR Code Warna
+
+                </h5>
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                ></button>
+
+            </div>
+
+
+            <div class="modal-body">
+
+                <div class="text-center">
+
+
+                    <!-- ITEM -->
+
+                    <h5
+                        id="qrItemName"
+                        class="fw-bold mb-0">
+                    </h5>
+
+
+                    <div
+                        id="qrItemCode"
+                        class="text-muted">
+                    </div>
+
+
+                    <hr>
+
+
+                    <!-- QR -->
+
+                    <div
+                        id="qrCode"
+                        class="d-flex justify-content-center my-3">
+                    </div>
+
+
+                    <!-- COLOR -->
+
+                    <div
+                        id="qrColorNo"
+                        class="fs-2 fw-bold">
+                    </div>
+
+
+                    <div
+                        id="qrColorName"
+                        class="fs-5">
+                    </div>
+
+
+                    <div
+                        id="qrValue"
+                        class="text-muted small mt-2">
+                    </div>
+
+
+                </div>
+
+            </div>
+
+
+            <div class="modal-footer">
+
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal">
+
+                    Tutup
+
+                </button>
+
+
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    onclick="printColorQR()">
+
+                    <i class="bi bi-printer me-1"></i>
+
+                    Print Label
+
+                </button>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+</div>
