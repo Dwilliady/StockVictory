@@ -117,6 +117,8 @@ async function loadDashboardSummary() {
                 id,
                 total
             `)
+            
+            .eq("status", "COMPLETED")
 
             .gte(
                 "sale_date",
@@ -202,7 +204,7 @@ async function loadRecentSales() {
                 invoice_no,
                 sale_date,
                 total,
-
+                status,
                 customers (
                     company_name
                 )
@@ -262,6 +264,41 @@ async function loadRecentSales() {
                     sale.customers?.company_name ||
                     "-";
 
+                const status =
+                    sale.status || "COMPLETED";
+
+
+                let statusBadge = "";
+
+
+                if (status === "COMPLETED") {
+
+                    statusBadge = `
+                        <span class="badge text-bg-success">
+                            <i class="bi bi-check-circle me-1"></i>
+                            COMPLETED
+                        </span>
+                    `;
+
+                } else if (status === "CANCELLED") {
+
+                    statusBadge = `
+                        <span class="badge text-bg-danger">
+                            <i class="bi bi-x-circle me-1"></i>
+                            CANCELLED
+                        </span>
+                    `;
+
+                } else {
+
+                    statusBadge = `
+                        <span class="badge text-bg-secondary">
+                            ${escapeHtml(status)}
+                        </span>
+                    `;
+
+                }
+
 
                 html += `
 
@@ -288,6 +325,8 @@ async function loadRecentSales() {
 
                         </td>
 
+                        
+
 
                         <td>
 
@@ -297,8 +336,14 @@ async function loadRecentSales() {
 
                         </td>
 
+                        <td class="text-start">
 
-                        <td class="text-end">
+                            ${statusBadge}
+
+                        </td>
+
+
+                        <td class="text-start">
 
                             ${formatDashboardCurrency(
                                 sale.total
